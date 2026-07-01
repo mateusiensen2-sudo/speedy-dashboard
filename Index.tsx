@@ -515,7 +515,7 @@ export default function Index() {
   }, [ready, session?.user.id]);
 
   const moneyClass = hideFinancials ? "money-value is-hidden" : "money-value";
-  const userEmail = session.user.email || "Usuário";
+  const userEmail = session!.user.email || "Usuário";
   const saveLabel = saveStatus === "saving" ? "Salvando..." : saveStatus === "error" ? "Erro ao salvar" : "Salvo no Supabase";
 
   const signOut = async () => {
