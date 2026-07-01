@@ -1,14 +1,9 @@
-# Speedy Media OS
+# Speedy Dashboard
 
-Painel React para acompanhar faturamento, funil, mercados, scoreboard mensal e prioridades da Speedy Media.
+Dashboard operacional da Speedy Media para acompanhar faturamento, funil comercial, decisões da semana e indicadores principais.
 
-## Rodar localmente
+## Deploy
 
-```bash
-npm install
-npm run dev
-```
+Projeto preparado para Vercel com React, Vite, Supabase e integração com Google Sheets.
 
-## Persistência
-
-Hoje os dados ficam em `localStorage`. O acesso foi isolado em `src/lib/persistence.ts`, para trocar futuramente por Supabase sem reescrever a tela principal.
+Deploy refresh
