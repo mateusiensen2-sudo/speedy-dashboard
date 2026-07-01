@@ -5,17 +5,13 @@ import {
   Activity,
   ArrowUpRight,
   BarChart3,
-  CalendarCheck,
   CheckCircle2,
   Circle,
   Copy,
   Eye,
   EyeOff,
   FileDown,
-  Crosshair,
   DollarSign,
-  Flag,
-  Megaphone,
   Plus,
   RefreshCw,
   Target,
@@ -31,8 +27,10 @@ const BRL = (n: number) =>
   Number.isFinite(n)
     ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
     : "—";
+
 const NUM = (n: number) => (Number.isFinite(n) ? n.toLocaleString("pt-BR") : "—");
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
+
 const statusFromPct = (p: number, hasGoal: boolean) => {
   if (!hasGoal) return "validation";
   if (p >= 100) return "ok";
@@ -48,6 +46,7 @@ const statusLabel = {
 } as const;
 
 type Status = keyof typeof statusLabel;
+
 type Funnel = {
   investment: number;
   leads: number;
@@ -58,7 +57,9 @@ type Funnel = {
   closed: number;
   ticket: number;
 };
+
 type Market = Funnel;
+
 type MonthRow = {
   month: string;
   revenue: number;
@@ -72,7 +73,9 @@ type MonthRow = {
   ticket: number;
   notes: string;
 };
+
 type Task = { id: string; label: string; done: boolean };
+
 type AppState = {
   revenueNow: number;
   revenueGoal: number;
@@ -185,11 +188,13 @@ type GoogleResponse = { table?: { rows?: Array<{ c?: GoogleCell[] }> } };
 const parseSheetNumber = (value: unknown) => {
   if (typeof value === "number") return value;
   if (typeof value !== "string") return 0;
+
   const normalized = value
     .split("R$").join("")
     .split(" ").join("")
     .split(".").join("")
     .replace(",", ".");
+
   const parsed = Number.parseFloat(normalized);
   return Number.isFinite(parsed) ? parsed : 0;
 };
@@ -198,16 +203,17 @@ function readGoogleRange(range: string): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
     const callbackName = "__speedySheet" + Date.now() + Math.round(Math.random() * 100000);
     const script = document.createElement("script");
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error("Tempo esgotado ao ler a planilha."));
-    }, 12000);
 
     const cleanup = () => {
       window.clearTimeout(timeout);
       script.remove();
       delete (window as any)[callbackName];
     };
+
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error("Tempo esgotado ao ler a planilha."));
+    }, 12000);
 
     (window as any)[callbackName] = (response: GoogleResponse) => {
       cleanup();
@@ -225,6 +231,7 @@ function readGoogleRange(range: string): Promise<unknown[]> {
       range,
       tqx: "out:json;responseHandler:" + callbackName,
     });
+
     script.src = "https://docs.google.com/spreadsheets/d/" + SHEET_CONFIG.id + "/gviz/tq?" + params.toString();
     document.body.appendChild(script);
   });
@@ -242,8 +249,6 @@ function sheetTotalToMarket(row: unknown[]): Market {
     ticket: parseSheetNumber(row[8]),
   };
 }
-
-const STORAGE_KEY = "speedy-os-v5";
 
 function normalizeState(parsed: Partial<AppState>): AppState {
   const tasks = Array.isArray(parsed.tasks)
@@ -311,6 +316,7 @@ function NumberField({
 
 function ProgressBar({ value, tone = "ok" }: { value: number; tone?: Status }) {
   const width = Math.max(0, Math.min(100, value));
+
   return (
     <div className="progress-track">
       <div className={"progress-fill tone-" + tone} style={{ width: width + "%" }} />
@@ -341,62 +347,6 @@ function MiniStat({ label, value, sub }: { label: string; value: React.ReactNode
   );
 }
 
-function LeverCard({
-  icon: Icon,
-  title,
-  description,
-  goal,
-  done,
-  onGoal,
-  onDone,
-  unit = "",
-}: {
-  icon: typeof Users;
-  title: string;
-  description: string;
-  goal: number;
-  done: number;
-  onGoal: (n: number) => void;
-  onDone: (n: number) => void;
-  unit?: string;
-}) {
-  const hasGoal = goal > 0;
-  const progress = pct(done, goal);
-  const status = statusFromPct(progress, hasGoal) as Status;
-
-  return (
-    <div className="surface lever-card">
-      <div className="card-head">
-        <div className="title-cluster">
-          <div className="icon-box"><Icon size={20} /></div>
-          <div>
-            <h3>{title}</h3>
-            <p>{description}</p>
-          </div>
-        </div>
-        <StatusPill status={status} />
-      </div>
-      <div className="two-cols">
-        <label>
-          <span>Meta mensal</span>
-          <NumberField value={goal} onChange={onGoal} suffix={unit} />
-        </label>
-        <label>
-          <span>Realizado</span>
-          <NumberField value={done} onChange={onDone} suffix={unit} />
-        </label>
-      </div>
-      <div>
-        <div className="progress-caption">
-          <span>{hasGoal ? progress + "% da meta" : "Sem meta definida"}</span>
-          <span>{NUM(done)} / {hasGoal ? NUM(goal) : "—"}</span>
-        </div>
-        <ProgressBar value={progress} tone={status} />
-      </div>
-    </div>
-  );
-}
-
 function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -405,6 +355,7 @@ function AuthScreen() {
   const login = async (event: FormEvent) => {
     event.preventDefault();
     setLoading(true);
+
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
 
@@ -427,6 +378,7 @@ function AuthScreen() {
           <span>E-mail</span>
           <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="email" />
         </label>
+
         <label className="auth-field">
           <span>Senha</span>
           <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required autoComplete="current-password" />
@@ -485,6 +437,7 @@ export default function Index() {
 
     const adapter = createSupabaseStateAdapter<AppState>(supabase, session.user.id);
     setReady(false);
+
     adapter.load()
       .then((saved) => {
         setState(saved ? normalizeState(saved) : DEFAULTS);
@@ -498,6 +451,7 @@ export default function Index() {
 
     const adapter = createSupabaseStateAdapter<AppState>(supabase, session.user.id);
     setSaveStatus("saving");
+
     const timeout = window.setTimeout(() => {
       adapter.save(state)
         .then(() => setSaveStatus("saved"))
@@ -515,7 +469,6 @@ export default function Index() {
   }, [ready, session?.user.id]);
 
   const moneyClass = hideFinancials ? "money-value is-hidden" : "money-value";
-  const userEmail = session!.user.email || "Usuário";
   const saveLabel = saveStatus === "saving" ? "Salvando..." : saveStatus === "error" ? "Erro ao salvar" : "Salvo no Supabase";
 
   const signOut = async () => {
@@ -523,17 +476,21 @@ export default function Index() {
     toast.info("Sessão encerrada.");
   };
 
-  const set = <K extends keyof AppState>(key: K, value: AppState[K]) => setState((current) => ({ ...current, [key]: value }));
+  const set = <K extends keyof AppState>(key: K, value: AppState[K]) =>
+    setState((current) => ({ ...current, [key]: value }));
+
   const setNested = <K extends keyof AppState>(key: K, sub: string, value: number) =>
     setState((current) => ({ ...current, [key]: { ...(current[key] as object), [sub]: value } as AppState[K] }));
 
   const syncGoogleSheets = async (showToast = false) => {
     setSheetStatus("loading");
+
     try {
       const [brRow, usRow] = await Promise.all([
         readGoogleRange(SHEET_CONFIG.brTotalRange),
         readGoogleRange(SHEET_CONFIG.usTotalRange),
       ]);
+
       const nextBr = sheetTotalToMarket(brRow);
       const nextUs = sheetTotalToMarket(usRow);
 
@@ -542,8 +499,10 @@ export default function Index() {
         br: nextBr,
         us: nextUs,
       }));
+
       setSheetUpdatedAt(new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
       setSheetStatus("success");
+
       if (showToast) toast.success("Dados da planilha atualizados.");
     } catch {
       setSheetStatus("error");
@@ -563,6 +522,7 @@ export default function Index() {
       ? ((state.br.ticket * state.br.closed) + (state.us.ticket * state.us.closed)) / (state.br.closed + state.us.closed)
       : 0,
   };
+
   const actualMeetings = combinedFunnel.meetingsDone;
   const revenuePct = pct(state.revenueNow, state.revenueGoal);
   const revenueStatus = statusFromPct(revenuePct, state.revenueGoal > 0) as Status;
@@ -576,12 +536,13 @@ export default function Index() {
   const totalClosed = state.months.reduce((sum, row) => sum + row.closed, 0);
   const totalRevenue = state.months.reduce((sum, row) => sum + row.revenue, 0);
   const totalInvestment = state.months.reduce((sum, row) => sum + row.investment, 0);
-  const blendedCac = totalClosed > 0 ? totalInvestment / totalClosed : null;
   const averageTicket = totalClosed > 0 ? totalRevenue / totalClosed : state.commercial.ticketMin;
 
   const conv = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) + "%" : "Em validação");
+
   const renderFunnel = (marketKey: "br" | "us", title: string) => {
     const market = state[marketKey];
+
     const steps = [
       { key: "investment", label: "Investimento", money: true, conv: null, convLabel: "" },
       { key: "leads", label: "Leads gerados", conv: null, convLabel: "" },
@@ -600,7 +561,13 @@ export default function Index() {
             <div className="funnel-step" key={step.key}>
               <span>Etapa {index + 1}</span>
               <strong>{step.label}</strong>
-              <span className={step.money ? moneyClass : undefined}><NumberField value={market[step.key as keyof Market]} onChange={(v) => setNested(marketKey, step.key, v)} prefix={step.money ? "R$" : undefined} /></span>
+              <span className={step.money ? moneyClass : undefined}>
+                <NumberField
+                  value={market[step.key as keyof Market]}
+                  onChange={(v) => setNested(marketKey, step.key, v)}
+                  prefix={step.money ? "R$" : undefined}
+                />
+              </span>
               {step.conv && <small>{step.convLabel}: <b>{step.conv}</b></small>}
             </div>
           ))}
@@ -614,21 +581,30 @@ export default function Index() {
     const mOk = combinedFunnel.meetingsDone >= state.meetings.goal * 0.7;
     const cOk = combinedFunnel.closed >= state.commercial.newClientsGoal;
 
-    if (!qOk) return {
-      tone: "bad" as Status,
-      title: "Gargalo provável: geração de leads qualificados.",
-      detail: "O topo do funil está abaixo do necessário. Foque em criativos, oferta e investimento em tráfego.",
-    };
-    if (qOk && !mOk) return {
-      tone: "warn" as Status,
-      title: "Gargalo provável: conversão de lead em reunião.",
-      detail: "Leads chegam, mas não viram reunião. Revise qualificação, abordagem e velocidade de resposta.",
-    };
-    if (mOk && !cOk) return {
-      tone: "warn" as Status,
-      title: "Gargalo provável: fechamento comercial/oferta.",
-      detail: "As reuniões acontecem, mas não fecham. Trabalhe oferta, proposta, prova e processo comercial.",
-    };
+    if (!qOk) {
+      return {
+        tone: "bad" as Status,
+        title: "Gargalo provável: geração de leads qualificados.",
+        detail: "O topo do funil está abaixo do necessário. Foque em criativos, oferta e investimento em tráfego.",
+      };
+    }
+
+    if (qOk && !mOk) {
+      return {
+        tone: "warn" as Status,
+        title: "Gargalo provável: conversão de lead em reunião.",
+        detail: "Leads chegam, mas não viram reunião. Revise qualificação, abordagem e velocidade de resposta.",
+      };
+    }
+
+    if (mOk && !cOk) {
+      return {
+        tone: "warn" as Status,
+        title: "Gargalo provável: fechamento comercial/oferta.",
+        detail: "As reuniões acontecem, mas não fecham. Trabalhe oferta, proposta, prova e processo comercial.",
+      };
+    }
+
     return {
       tone: "ok" as Status,
       title: "Sistema dentro do planejado.",
@@ -663,7 +639,7 @@ export default function Index() {
       "RESUMO - Sistema Operacional Speedy",
       "Faturamento atual: " + BRL(state.revenueNow) + " / Meta " + BRL(state.revenueGoal) + " (" + revenuePct + "%)",
       "",
-      "BASE JULHO",
+      "BASE",
       "Clientes ativos: " + NUM(activeClientCount),
       "Receita recorrente: " + BRL(activeRecurringRevenue),
       "Ticket médio: " + BRL(activeAverageTicket),
@@ -694,6 +670,8 @@ export default function Index() {
   if (!session) return <AuthScreen />;
   if (!ready) return <LoadingScreen />;
 
+  const userEmail = session.user.email || "Usuário";
+
   return (
     <main className={"app-shell" + (hideFinancials ? " hide-financials" : "")}>
       <div className="page-wrap">
@@ -703,17 +681,36 @@ export default function Index() {
             <h1>Sistema Operacional Speedy</h1>
             <p>Meta macro: <strong>R$ 40.000/mês</strong> até dezembro de 2026.</p>
           </div>
+
           <div className="hero-actions">
             <span className="user-chip">{userEmail}</span>
             <button className="ghost-btn" onClick={signOut}>Sair</button>
-            <button className="ghost-btn" onClick={() => setHideFinancials((current) => !current)}>{hideFinancials ? <Eye size={12} /> : <EyeOff size={12} />} {hideFinancials ? "Mostrar" : "Ocultar"}</button>
-            <button className="ghost-btn" onClick={() => syncGoogleSheets(true)} disabled={sheetStatus === "loading"}><RefreshCw size={12} /> {sheetStatus === "loading" ? "Atualizando" : "Atualizar planilha"}</button>
-            <button className="primary-btn" onClick={exportPdf}><FileDown size={12} /> Exportar PDF</button>
-            <button className="ghost-btn" onClick={exportSummary}><Copy size={12} /> Copiar resumo</button>
+            <button className="ghost-btn" onClick={() => setHideFinancials((current) => !current)}>
+              {hideFinancials ? <Eye size={12} /> : <EyeOff size={12} />}
+              {hideFinancials ? "Mostrar" : "Ocultar"}
+            </button>
+            <button className="ghost-btn" onClick={() => syncGoogleSheets(true)} disabled={sheetStatus === "loading"}>
+              <RefreshCw size={12} />
+              {sheetStatus === "loading" ? "Atualizando" : "Atualizar planilha"}
+            </button>
+            <button className="primary-btn" onClick={exportPdf}>
+              <FileDown size={12} />
+              Exportar PDF
+            </button>
+            <button className="ghost-btn" onClick={exportSummary}>
+              <Copy size={12} />
+              Copiar resumo
+            </button>
           </div>
         </header>
 
-        <div className={"sheet-status tone-" + sheetStatus}>{sheetStatus === "success" ? "Planilha atualizada" + (sheetUpdatedAt ? " às " + sheetUpdatedAt : "") : sheetStatus === "error" ? "Não foi possível ler a planilha" : "Dados comerciais vinculados à planilha"} · {saveLabel}</div>
+        <div className={"sheet-status tone-" + sheetStatus}>
+          {sheetStatus === "success"
+            ? "Planilha atualizada" + (sheetUpdatedAt ? " às " + sheetUpdatedAt : "")
+            : sheetStatus === "error"
+              ? "Não foi possível ler a planilha"
+              : "Dados comerciais vinculados à planilha"} · {saveLabel}
+        </div>
 
         <section className="revenue-panel surface elevated">
           <div className="revenue-grid">
@@ -721,16 +718,27 @@ export default function Index() {
               <div className="icon-box large"><DollarSign size={22} /></div>
               <div>
                 <span>Faturamento atual</span>
-                <strong className={moneyClass}><NumberField value={state.revenueNow} onChange={(v) => set("revenueNow", v)} prefix="R$" /></strong>
+                <strong className={moneyClass}>
+                  <NumberField value={state.revenueNow} onChange={(v) => set("revenueNow", v)} prefix="R$" />
+                </strong>
               </div>
             </div>
+
             <div className="metric-right">
               <span>Meta</span>
-              <strong className={moneyClass}><NumberField value={state.revenueGoal} onChange={(v) => set("revenueGoal", v)} prefix="R$" /></strong>
+              <strong className={moneyClass}>
+                <NumberField value={state.revenueGoal} onChange={(v) => set("revenueGoal", v)} prefix="R$" />
+              </strong>
             </div>
           </div>
-          <div className="progress-caption"><span>Progresso até a meta macro</span><strong className="progress-percent">{revenuePct}%</strong></div>
+
+          <div className="progress-caption">
+            <span>Progresso até a meta macro</span>
+            <strong className="progress-percent">{revenuePct}%</strong>
+          </div>
+
           <ProgressBar value={revenuePct} tone={revenueStatus} />
+
           <div className="revenue-context">
             <MiniStat label="Clientes ativos" value={<span className={moneyClass}>{NUM(activeClientCount)}</span>} />
             <MiniStat label="Receita recorrente" value={<span className={moneyClass}>{BRL(activeRecurringRevenue)}</span>} />
@@ -751,119 +759,144 @@ export default function Index() {
               <h2>Gerar mais reuniões qualificadas</h2>
               <p>{diagnosis.detail}</p>
             </div>
+
             <div className="primary-lever-score">
               <span>Faltam reuniões</span>
               <strong>{NUM(Math.max(0, state.meetings.goal - actualMeetings))}</strong>
               <small>{NUM(actualMeetings)} feitas de {NUM(state.meetings.goal)} planejadas</small>
-              <ProgressBar value={pct(actualMeetings, state.meetings.goal)} tone={statusFromPct(pct(actualMeetings, state.meetings.goal), state.meetings.goal > 0) as Status} />
+              <ProgressBar
+                value={pct(actualMeetings, state.meetings.goal)}
+                tone={statusFromPct(pct(actualMeetings, state.meetings.goal), state.meetings.goal > 0) as Status}
+              />
             </div>
           </div>
         </section>
 
         <details className="advanced-section">
           <summary>Dados avançados</summary>
+
           <section>
             <SectionTitle icon={Target} title="Meta Comercial" />
-          <div className="cards-grid six">
-            <MiniStat label="Clientes novos/mês" value={<NumberField value={state.commercial.newClientsGoal} onChange={(v) => setNested("commercial", "newClientsGoal", v)} />} />
-            <MiniStat label="Ticket médio mínimo" value={<span className={moneyClass}><NumberField value={state.commercial.ticketMin} onChange={(v) => setNested("commercial", "ticketMin", v)} prefix="R$" /></span>} />
-            <MiniStat label="Taxa de conversão" value={<NumberField value={state.commercial.conversion} onChange={(v) => setNested("commercial", "conversion", v)} suffix="%" />} sub="reunião → cliente" />
-            <MiniStat label="Reuniões p/ 2 clientes" value={<NumberField value={state.commercial.meetingsToClose} onChange={(v) => setNested("commercial", "meetingsToClose", v)} />} />
-            <MiniStat label="Churn esperado" value={<NumberField value={state.commercial.churn} onChange={(v) => setNested("commercial", "churn", v)} />} sub="cliente/mês" />
-            <MiniStat label="Meta segura reuniões" value={<NumberField value={state.commercial.safeMeetings} onChange={(v) => setNested("commercial", "safeMeetings", v)} />} />
-          </div>
-          <div className="cards-grid four compact-top">
-            <MiniStat label="Clientes projetados" value={projectedClients.toFixed(1)} sub={"baseado em " + actualMeetings + " reuniões"} />
-            <MiniStat label="Receita projetada" value={<span className={moneyClass}>{BRL(projectedRevenue)}</span>} />
-            <MiniStat label="Faltam clientes" value={clientsGap.toFixed(1)} sub={"meta " + state.commercial.newClientsGoal} />
-            <MiniStat label="Faltam reuniões" value={NUM(meetingsGap)} sub={"meta segura " + state.commercial.safeMeetings} />
-          </div>
-        </section>
+            <div className="cards-grid six">
+              <MiniStat label="Clientes novos/mês" value={<NumberField value={state.commercial.newClientsGoal} onChange={(v) => setNested("commercial", "newClientsGoal", v)} />} />
+              <MiniStat label="Ticket médio mínimo" value={<span className={moneyClass}><NumberField value={state.commercial.ticketMin} onChange={(v) => setNested("commercial", "ticketMin", v)} prefix="R$" /></span>} />
+              <MiniStat label="Taxa de conversão" value={<NumberField value={state.commercial.conversion} onChange={(v) => setNested("commercial", "conversion", v)} suffix="%" />} sub="reunião → cliente" />
+              <MiniStat label="Reuniões p/ 2 clientes" value={<NumberField value={state.commercial.meetingsToClose} onChange={(v) => setNested("commercial", "meetingsToClose", v)} />} />
+              <MiniStat label="Churn esperado" value={<NumberField value={state.commercial.churn} onChange={(v) => setNested("commercial", "churn", v)} />} sub="cliente/mês" />
+              <MiniStat label="Meta segura reuniões" value={<NumberField value={state.commercial.safeMeetings} onChange={(v) => setNested("commercial", "safeMeetings", v)} />} />
+            </div>
 
-        {renderFunnel("br", "Funil Comercial BR")}
-        {renderFunnel("us", "Funil Comercial EUA")}
+            <div className="cards-grid four compact-top">
+              <MiniStat label="Clientes projetados" value={projectedClients.toFixed(1)} sub={"baseado em " + actualMeetings + " reuniões"} />
+              <MiniStat label="Receita projetada" value={<span className={moneyClass}>{BRL(projectedRevenue)}</span>} />
+              <MiniStat label="Faltam clientes" value={clientsGap.toFixed(1)} sub={"meta " + state.commercial.newClientsGoal} />
+              <MiniStat label="Faltam reuniões" value={NUM(meetingsGap)} sub={"meta segura " + state.commercial.safeMeetings} />
+            </div>
+          </section>
 
-        <section>
-          <SectionTitle icon={TrendingUp} title="Aquisição por Mercado" />
-          <div className="cards-grid two">
-            {[
-              { key: "br", budgetKey: "budgetBR", code: "BR", title: "Brasil", status: "Dados do Funil Comercial BR" },
-              { key: "us", budgetKey: "budgetUS", code: "EUA", title: "Estados Unidos", status: "Dados do Funil Comercial EUA" },
-            ].map(({ key, budgetKey, code, title, status }) => {
-              const market = state[key as "br" | "us"];
-              const cpl = market.leads > 0 ? market.investment / market.leads : null;
-              const cac = market.closed > 0 ? market.investment / market.closed : null;
-              const budgetValue = state[budgetKey as "budgetBR" | "budgetUS"];
-              return (
-                <div className="surface market-card" key={key}>
-                  <div className="market-head"><h3><span>{code}</span>{title}</h3><em>{status}</em></div>
-                  <div className="market-grid">
-                    <label className="metric-box"><span>Meta de investimento</span><span className={moneyClass}><NumberField value={budgetValue} onChange={(v) => set(budgetKey as "budgetBR" | "budgetUS", v)} prefix="R$" /></span></label>
-                    <div className="metric-box"><span>Investimento</span><strong className={moneyClass}>{BRL(market.investment)}</strong></div>
-                    <div className="metric-box"><span>Leads gerados</span><strong>{NUM(market.leads)}</strong></div>
-                    <div className="metric-box"><span>Leads qualificados</span><strong>{NUM(market.qualified)}</strong></div>
-                    <div className="metric-box"><span>Reuniões realizadas</span><strong>{NUM(market.meetingsDone)}</strong></div>
-                    <div className="metric-box"><span>Clientes fechados</span><strong>{NUM(market.closed)}</strong></div>
-                    <div className="metric-box"><span>Ticket</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
-                    <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? BRL(cpl) : "Em validação"}</strong></div>
-                    <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? BRL(cac) : "Em validação"}</strong></div>
+          {renderFunnel("br", "Funil Comercial BR")}
+          {renderFunnel("us", "Funil Comercial EUA")}
+
+          <section>
+            <SectionTitle icon={TrendingUp} title="Aquisição por Mercado" />
+            <div className="cards-grid two">
+              {[
+                { key: "br", budgetKey: "budgetBR", code: "BR", title: "Brasil", status: "Dados do Funil Comercial BR" },
+                { key: "us", budgetKey: "budgetUS", code: "EUA", title: "Estados Unidos", status: "Dados do Funil Comercial EUA" },
+              ].map(({ key, budgetKey, code, title, status }) => {
+                const market = state[key as "br" | "us"];
+                const cpl = market.leads > 0 ? market.investment / market.leads : null;
+                const cac = market.closed > 0 ? market.investment / market.closed : null;
+                const budgetValue = state[budgetKey as "budgetBR" | "budgetUS"];
+
+                return (
+                  <div className="surface market-card" key={key}>
+                    <div className="market-head">
+                      <h3><span>{code}</span>{title}</h3>
+                      <em>{status}</em>
+                    </div>
+
+                    <div className="market-grid">
+                      <label className="metric-box">
+                        <span>Meta de investimento</span>
+                        <span className={moneyClass}>
+                          <NumberField value={budgetValue} onChange={(v) => set(budgetKey as "budgetBR" | "budgetUS", v)} prefix="R$" />
+                        </span>
+                      </label>
+                      <div className="metric-box"><span>Investimento</span><strong className={moneyClass}>{BRL(market.investment)}</strong></div>
+                      <div className="metric-box"><span>Leads gerados</span><strong>{NUM(market.leads)}</strong></div>
+                      <div className="metric-box"><span>Leads qualificados</span><strong>{NUM(market.qualified)}</strong></div>
+                      <div className="metric-box"><span>Reuniões realizadas</span><strong>{NUM(market.meetingsDone)}</strong></div>
+                      <div className="metric-box"><span>Clientes fechados</span><strong>{NUM(market.closed)}</strong></div>
+                      <div className="metric-box"><span>Ticket</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? BRL(cpl) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? BRL(cac) : "Em validação"}</strong></div>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+                );
+              })}
+            </div>
+          </section>
 
-        <section>
-          <SectionTitle icon={BarChart3} title="Scoreboard Mensal 2026" />
-          <div className="surface table-scroll scoreboard-wrap">
-            <table className="scoreboard-table">
-              <colgroup>
-                <col className="month-col" />
-                <col />
-                <col />
-                <col className="small-col" />
-                <col className="small-col" />
-                <col className="small-col" />
-                <col className="small-col" />
-                <col className="small-col" />
-                <col className="small-col" />
-                <col className="ticket-col" />
-                <col />
-                <col className="notes-col" />
-              </colgroup>
-              <thead><tr>{["Mês", "Faturamento", "Investimento", "Leads", "Qualificados", "Reuniões", "Fechados", "Perdidos", "Saldo", "Ticket", "CAC", "Obs."].map((head) => <th key={head}>{head}</th>)}</tr></thead>
-              <tbody>
-                {state.months.map((row, index) => {
-                  const saldo = row.closed - row.lost;
-                  const cac = row.closed > 0 ? row.investment / row.closed : null;
-                  const update = (key: keyof MonthRow, value: string | number) => {
-                    const next = [...state.months];
-                    next[index] = { ...next[index], [key]: value } as MonthRow;
-                    set("months", next);
-                  };
-                  return (
-                    <tr key={row.month}>
-                      <td><strong>{row.month}</strong></td>
-                      <td className={moneyClass}><NumberField value={row.revenue} onChange={(v) => update("revenue", v)} prefix="R$" /></td>
-                      <td className={moneyClass}><NumberField value={row.investment} onChange={(v) => update("investment", v)} prefix="R$" /></td>
-                      <td><NumberField value={row.leads} onChange={(v) => update("leads", v)} /></td>
-                      <td><NumberField value={row.qualified} onChange={(v) => update("qualified", v)} /></td>
-                      <td><NumberField value={row.meetings} onChange={(v) => update("meetings", v)} /></td>
-                      <td><NumberField value={row.closed} onChange={(v) => update("closed", v)} /></td>
-                      <td><NumberField value={row.lost} onChange={(v) => update("lost", v)} /></td>
-                      <td className={saldo > 0 ? "positive" : saldo < 0 ? "negative" : ""}>{saldo}</td>
-                      <td className={"ticket-cell " + moneyClass}><NumberField value={row.ticket} onChange={(v) => update("ticket", v)} prefix="R$" /></td>
-                      <td className={moneyClass}>{cac ? BRL(cac) : "—"}</td>
-                      <td><input className="text-cell" value={row.notes} placeholder="—" onChange={(event) => update("notes", event.target.value)} /></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
+          <section>
+            <SectionTitle icon={BarChart3} title="Scoreboard Mensal 2026" />
+            <div className="surface table-scroll scoreboard-wrap">
+              <table className="scoreboard-table">
+                <colgroup>
+                  <col className="month-col" />
+                  <col />
+                  <col />
+                  <col className="small-col" />
+                  <col className="small-col" />
+                  <col className="small-col" />
+                  <col className="small-col" />
+                  <col className="small-col" />
+                  <col className="small-col" />
+                  <col className="ticket-col" />
+                  <col />
+                  <col className="notes-col" />
+                </colgroup>
 
+                <thead>
+                  <tr>
+                    {["Mês", "Faturamento", "Investimento", "Leads", "Qualificados", "Reuniões", "Fechados", "Perdidos", "Saldo", "Ticket", "CAC", "Obs."].map((head) => (
+                      <th key={head}>{head}</th>
+                    ))}
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {state.months.map((row, index) => {
+                    const saldo = row.closed - row.lost;
+                    const cac = row.closed > 0 ? row.investment / row.closed : null;
+
+                    const update = (key: keyof MonthRow, value: string | number) => {
+                      const next = [...state.months];
+                      next[index] = { ...next[index], [key]: value } as MonthRow;
+                      set("months", next);
+                    };
+
+                    return (
+                      <tr key={row.month}>
+                        <td><strong>{row.month}</strong></td>
+                        <td className={moneyClass}><NumberField value={row.revenue} onChange={(v) => update("revenue", v)} prefix="R$" /></td>
+                        <td className={moneyClass}><NumberField value={row.investment} onChange={(v) => update("investment", v)} prefix="R$" /></td>
+                        <td><NumberField value={row.leads} onChange={(v) => update("leads", v)} /></td>
+                        <td><NumberField value={row.qualified} onChange={(v) => update("qualified", v)} /></td>
+                        <td><NumberField value={row.meetings} onChange={(v) => update("meetings", v)} /></td>
+                        <td><NumberField value={row.closed} onChange={(v) => update("closed", v)} /></td>
+                        <td><NumberField value={row.lost} onChange={(v) => update("lost", v)} /></td>
+                        <td className={saldo > 0 ? "positive" : saldo < 0 ? "negative" : ""}>{saldo}</td>
+                        <td className={"ticket-cell " + moneyClass}><NumberField value={row.ticket} onChange={(v) => update("ticket", v)} prefix="R$" /></td>
+                        <td className={moneyClass}>{cac ? BRL(cac) : "—"}</td>
+                        <td><input className="text-cell" value={row.notes} placeholder="—" onChange={(event) => update("notes", event.target.value)} /></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </details>
 
         <section className="cards-grid two align-start clean-bottom">
@@ -871,33 +904,58 @@ export default function Index() {
             <SectionTitle icon={CheckCircle2} title="Decisões da semana" />
             <div className="surface task-panel">
               {state.tasks.length === 0 && <p className="empty">Nenhuma decisão definida. Adicione uma abaixo ou escolha uma sugestão.</p>}
+
               {state.tasks.map((task) => {
-                const updateTask = (patch: Partial<Task>) => set("tasks", state.tasks.map((item) => item.id === task.id ? { ...item, ...patch } : item));
-                const removeTask = () => set("tasks", state.tasks.filter((item) => item.id !== task.id));
+                const updateTask = (patch: Partial<Task>) =>
+                  set("tasks", state.tasks.map((item) => item.id === task.id ? { ...item, ...patch } : item));
+
+                const removeTask = () =>
+                  set("tasks", state.tasks.filter((item) => item.id !== task.id));
+
                 return (
                   <div className="task-row" key={task.id}>
-                    <button onClick={() => updateTask({ done: !task.done })} aria-label="Concluir decisão">{task.done ? <CheckCircle2 size={20} /> : <Circle size={20} />}</button>
+                    <button onClick={() => updateTask({ done: !task.done })} aria-label="Concluir decisão">
+                      {task.done ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                    </button>
                     <input className={task.done ? "done" : ""} value={task.label} onChange={(event) => updateTask({ label: event.target.value })} />
                     <button onClick={removeTask} aria-label="Excluir decisão"><X size={16} /></button>
                   </div>
                 );
               })}
-              <form className="add-task" onSubmit={(event) => {
-                event.preventDefault();
-                const form = event.currentTarget;
-                const data = new FormData(form);
-                const label = String(data.get("newTask") || "").trim();
-                if (!label) return;
-                set("tasks", [...state.tasks, { id: crypto.randomUUID(), label, done: false }]);
-                form.reset();
-              }}>
+
+              <form
+                className="add-task"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  const form = event.currentTarget;
+                  const data = new FormData(form);
+                  const label = String(data.get("newTask") || "").trim();
+
+                  if (!label) return;
+
+                  set("tasks", [...state.tasks, { id: crypto.randomUUID(), label, done: false }]);
+                  form.reset();
+                }}
+              >
                 <input name="newTask" placeholder="Adicionar nova decisão..." />
                 <button className="primary-btn"><Plus size={16} /> Adicionar</button>
               </form>
+
               <div className="suggestions">
                 {SUGGESTIONS.map((suggestion) => {
                   const exists = state.tasks.some((task) => task.label.toLowerCase() === suggestion.toLowerCase());
-                  return <button key={suggestion} disabled={exists} title={exists ? "Já adicionada" : "Adicionar decisão"} onClick={() => set("tasks", [...state.tasks, { id: crypto.randomUUID(), label: suggestion, done: false }])}>{exists ? <CheckCircle2 size={12} /> : <Plus size={12} />} {suggestion}</button>;
+
+                  return (
+                    <button
+                      key={suggestion}
+                      disabled={exists}
+                      title={exists ? "Já adicionada" : "Adicionar decisão"}
+                      onClick={() => set("tasks", [...state.tasks, { id: crypto.randomUUID(), label: suggestion, done: false }])}
+                    >
+                      {exists ? <CheckCircle2 size={12} /> : <Plus size={12} />}
+                      {suggestion}
+                    </button>
+                  );
                 })}
               </div>
             </div>
@@ -908,14 +966,20 @@ export default function Index() {
             <div className="surface action-plan">
               {operatingPlan.map((item) => (
                 <div className={"action-item tone-border-" + item.tone} key={item.title}>
-                  <div className="title-cluster"><div className={"dot tone-" + item.tone} /><div><h3>{item.title}</h3><p>{item.detail}</p></div></div>
+                  <div className="title-cluster">
+                    <div className={"dot tone-" + item.tone} />
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.detail}</p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         </section>
 
-        <footer>Sistema Operacional Speedy · Dados salvos localmente no navegador</footer>
+        <footer>Sistema Operacional Speedy · Dados salvos no Supabase</footer>
       </div>
     </main>
   );
