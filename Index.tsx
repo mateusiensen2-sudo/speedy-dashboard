@@ -409,9 +409,9 @@ function AuthScreen() {
     setLoading(false);
 
     if (error) {
-      toast.error("Não foi possível entrar. Confira e-mail e senha.");
-      return;
-    }
+  toast.error(error.message || "Não foi possível entrar.");
+  return;
+}
 
     toast.success("Login realizado.");
   };
