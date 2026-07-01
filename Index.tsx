@@ -419,9 +419,14 @@ export default function Index() {
       .finally(() => setAuthReady(true));
 
     const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
+  setSession((currentSession) => {
+    if (currentSession?.user.id !== nextSession?.user.id) {
       setReady(false);
-    });
+    }
+
+    return nextSession;
+  });
+});
 
     return () => data.subscription.unsubscribe();
   }, []);
