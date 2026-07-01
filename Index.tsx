@@ -409,9 +409,9 @@ function AuthScreen() {
     setLoading(false);
 
     if (error) {
-  toast.error(error.message || "Não foi possível entrar.");
-  return;
-}
+      toast.error("Não foi possível entrar. Confira e-mail e senha.");
+      return;
+    }
 
     toast.success("Login realizado.");
   };
@@ -513,10 +513,6 @@ export default function Index() {
   useEffect(() => {
     if (ready && session?.user.id) void syncGoogleSheets(false);
   }, [ready, session?.user.id]);
-
-  if (!authReady) return <LoadingScreen label="Conectando ao Supabase..." />;
-  if (!session) return <AuthScreen />;
-  if (!ready) return <LoadingScreen />;
 
   const moneyClass = hideFinancials ? "money-value is-hidden" : "money-value";
   const userEmail = session.user.email || "Usuário";
@@ -693,6 +689,10 @@ export default function Index() {
       toast.error("Não foi possível copiar o resumo.");
     }
   };
+
+  if (!authReady) return <LoadingScreen label="Conectando ao Supabase..." />;
+  if (!session) return <AuthScreen />;
+  if (!ready) return <LoadingScreen />;
 
   return (
     <main className={"app-shell" + (hideFinancials ? " hide-financials" : "")}>
