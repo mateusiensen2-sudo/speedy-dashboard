@@ -1087,30 +1087,35 @@ strong.money-value {
   min-height: 40px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  border: 1px solid var(--line);
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 0 10px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 0 12px;
+  background: rgba(255, 255, 255, 0.035);
   color: var(--text);
 }
 
 .month-selector span {
   color: var(--subtle);
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
 }
 
 .month-selector select {
+  min-width: 112px;
   border: 0;
   outline: 0;
-  background: transparent;
+  appearance: none;
+  background:
+    linear-gradient(45deg, transparent 50%, var(--subtle) 50%) right 8px center / 6px 6px no-repeat,
+    linear-gradient(135deg, var(--subtle) 50%, transparent 50%) right 4px center / 6px 6px no-repeat;
   color: var(--text);
   font: inherit;
-  font-weight: 800;
+  font-weight: 900;
   cursor: pointer;
+  padding: 0 18px 0 0;
 }
 
 .month-selector select option {
