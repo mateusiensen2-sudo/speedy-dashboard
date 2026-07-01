@@ -792,7 +792,18 @@ export default function Index() {
             <p>Meta macro: <strong>R$ 40.000/mês</strong> até dezembro de 2026.</p>
           </div>
 
-          <div className="hero-actions">            <button className="ghost-btn" onClick={signOut}>Sair</button>
+          <div className="hero-actions">
+            <div className="month-selector">
+  <span>Mês</span>
+  <select value={state.selectedMonth} onChange={(event) => set("selectedMonth", event.target.value)}>
+    {MONTH_OPTIONS.map((month) => (
+      <option key={month} value={month}>
+        {month}
+      </option>
+    ))}
+  </select>
+</div>
+            <button className="ghost-btn" onClick={signOut}>Sair</button>
             <button className="ghost-btn" onClick={() => setHideFinancials((current) => !current)}>
               {hideFinancials ? <Eye size={12} /> : <EyeOff size={12} />}
               {hideFinancials ? "Mostrar" : "Ocultar"}
