@@ -5,6 +5,7 @@ import {
   Activity,
   ArrowUpRight,
   BarChart3,
+  CalendarDays,
   CheckCircle2,
   Circle,
   Copy,
@@ -793,6 +794,7 @@ export default function Index() {
           </div>
 
           <div className="hero-actions">
+            <a className="ghost-btn" href="/insta"><CalendarDays size={14} /> Calendário</a>
             <div className="month-selector">
   <span>Mês</span>
   <select value={state.selectedMonth} onChange={(event) => set("selectedMonth", event.target.value)}>
