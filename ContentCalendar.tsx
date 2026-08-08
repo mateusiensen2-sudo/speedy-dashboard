@@ -13,6 +13,7 @@ import {
   Plus,
   Search,
   Sparkles,
+  StickyNote,
   Trash2,
   X,
 } from "lucide-react";
@@ -35,9 +36,12 @@ type ContentItem = {
   notes: string;
 };
 
+type CalendarNote = { id: string; date: string; text: string };
+
 type CalendarState = {
   items: ContentItem[];
   pillars: string[];
+  notes: CalendarNote[];
 };
 
 const STATUS: Record<ContentStatus, { label: string; className: string }> = {
@@ -50,8 +54,37 @@ const STATUS: Record<ContentStatus, { label: string; className: string }> = {
 };
 
 const FORMATS: ContentFormat[] = ["Reel", "Carrossel", "Story", "Foto", "Live"];
-const DEFAULT_PILLARS = ["Founder story", "Bastidores", "Educação", "Opinião", "Prova social"];
-const EMPTY_STATE: CalendarState = { items: [], pillars: DEFAULT_PILLARS };
+const DEFAULT_PILLARS = ["História real", "Análise externa", "Bastidor da Speedy", "Opinião forte", "Fundador pessoal"];
+const EMPTY_STATE: CalendarState = { items: [], pillars: DEFAULT_PILLARS, notes: [] };
+
+const STORY_PLAN = [
+  "Constância",
+  "Constância · situação real · decisão",
+  "Constância · bastidor · melhoria",
+  "Constância · opinião · conclusão",
+  "Constância · situação real · decisão",
+  "Constância · prova · diagnóstico",
+  "Constância",
+];
+
+const MONTH_PLAN = [
+  { week: 1, weekday: 1, pillar: "História real", title: "O cliente que pediu mais leads", hook: "O cliente me pediu mais leads. Eu disse que esse não era o próximo passo.", body: "Contexto:\nProblema aparente: faltavam leads.\nDescoberta: identificar o verdadeiro gargalo nos números.\nDecisão:\nConclusão:" },
+  { week: 1, weekday: 3, pillar: "Análise externa", title: "A oferta de Botox por $7,99", hook: "Essa clínica está anunciando Botox por $7,99. O número parece barato, mas não é isso que torna a oferta forte.", body: "Contexto: mostrar o anúncio.\nProblema aparente: preço baixo.\nDescoberta: mecanismo de curiosidade e apresentação.\nDecisão: o que adaptar e o que não copiar.\nConclusão:" },
+  { week: 1, weekday: 5, pillar: "Bastidor da Speedy", title: "O dashboard que virou procrastinação", hook: "Eu construí um dashboard inteiro e percebi que estava usando organização para evitar vender.", body: "Contexto: por que o dashboard foi criado.\nProblema aparente: falta de organização.\nDescoberta: indicadores não tomavam decisões.\nDecisão: o que remover e priorizar.\nConclusão:" },
+  { week: 1, weekday: 0, pillar: "Opinião forte", title: "Agências assumem crédito demais", hook: "Agências de tráfego assumem crédito demais pelo crescimento dos clientes.", body: "Contexto:\nProblema aparente: atribuir receita ao anúncio.\nDescoberta: outras partes do negócio participaram.\nDecisão: como apresentar cases com honestidade.\nConclusão:" },
+  { week: 2, weekday: 1, pillar: "História real", title: "A campanha que parecia ruim", hook: "Essa campanha parecia ruim até eu parar de olhar o custo por lead.", body: "Contexto: CPL alto.\nProblema aparente: pausar a campanha.\nDescoberta: qualidade, ticket, agendamentos ou receita.\nDecisão:\nConclusão:" },
+  { week: 2, weekday: 3, pillar: "Análise externa", title: "A avaliação gratuita que confunde", hook: "Essa empresa oferece avaliação gratuita, mas o anúncio faz parecer que você já ganhou o procedimento.", body: "Contexto: mostrar a oferta.\nProblema aparente: promessa atraente.\nDescoberta: diferença entre o literal e o que o consumidor entende.\nDecisão: alternativa mais clara.\nConclusão:" },
+  { week: 2, weekday: 5, pillar: "História real", title: "O anúncio bonito que não vendeu", hook: "Esse foi o anúncio mais bonito da campanha — e um dos piores em resultado.", body: "Contexto: mostrar os dois criativos.\nProblema aparente: estética.\nDescoberta: a peça simples comunicava melhor.\nDecisão:\nConclusão:" },
+  { week: 2, weekday: 0, pillar: "Fundador pessoal", title: "Trabalho em inglês, mas ainda travo", hook: "Eu consigo escrever uma campanha para americanos, mas ainda travo numa conversa simples em inglês.", body: "Contexto: situação real.\nContradição: competência técnica x conversação.\nDescoberta: isso não impediu o trabalho.\nDecisão: o que ainda estou desenvolvendo.\nConclusão:" },
+  { week: 3, weekday: 1, pillar: "História real", title: "A promoção que eu não deixei publicar", hook: "Essa promoção provavelmente geraria mais leads. Mesmo assim, eu não deixei o cliente publicar.", body: "Contexto: qual era a promoção.\nProblema aparente: gerar volume.\nDescoberta: impacto em público, margem e posicionamento.\nDecisão: o que entrou no lugar.\nConclusão:" },
+  { week: 3, weekday: 3, pillar: "Análise externa", title: "Três empresas, o mesmo cliente", hook: "Eu vi três clínicas anunciando o mesmo procedimento. Só uma me deu um motivo para escolher.", body: "Contexto: mostrar três anúncios.\nProblema aparente: ofertas parecidas.\nDescoberta: especificidade, risco e valor percebido.\nDecisão: qual escolher e por quê.\nConclusão:" },
+  { week: 3, weekday: 5, pillar: "Bastidor da Speedy", title: "Margem alta pode ser crescimento lento", hook: "Minha empresa tem uma margem muito alta. Isso pode ser um sinal de que estou crescendo devagar.", body: "Contexto: por que guardar lucro parecia certo.\nProblema aparente: proteger margem.\nDescoberta: pouco reinvestimento pode limitar crescimento.\nDecisão: onde reinvestir e como medir risco.\nConclusão:" },
+  { week: 3, weekday: 0, pillar: "Opinião forte", title: "Lead barato pode sair caro", hook: "Lead barato pode ser a métrica mais cara de uma campanha.", body: "Contexto: comparar duas campanhas.\nProblema aparente: CPL.\nDescoberta: o que aconteceu depois do formulário.\nDecisão: qual métrica passou a orientar a campanha.\nConclusão:" },
+  { week: 4, weekday: 1, pillar: "História real", title: "O resultado não veio só do tráfego", hook: "Esse cliente passou de X para Y — mas seria mentira dizer que foi por causa dos anúncios.", body: "Contexto: situação anterior.\nProblema aparente: atribuição ao tráfego.\nDescoberta: posicionamento, conteúdo, oferta e comercial.\nDecisão:\nConclusão:" },
+  { week: 4, weekday: 3, pillar: "Bastidor da Speedy", title: "A aquisição da própria Speedy", hook: "Eu consigo gerar clientes para outras empresas, mas ainda não construí aquisição previsível para a minha.", body: "Contexto: como a Speedy conquista clientes hoje.\nContradição: entregar aquisição sem tê-la previsível internamente.\nDescoberta:\nDecisão: canal, investimento e critério de sucesso.\nConclusão:" },
+  { week: 4, weekday: 5, pillar: "História real", title: "O número que mudou minha decisão", hook: "Eu estava pronto para desligar essa campanha. Então encontrei um número que mudou a decisão.", body: "Contexto: o que parecia errado.\nProblema aparente: a métrica inicial.\nDescoberta: a informação que faltava.\nDecisão: manter, mudar ou escalar.\nConclusão:" },
+  { week: 4, weekday: 0, pillar: "Fundador pessoal", title: "O operador que inventa sistemas", hook: "Eu digo que preciso sair da operação, mas toda semana invento um novo sistema para construir.", body: "Contexto: por que quero sair da operação.\nContradição: continuo construindo pessoalmente.\nDescoberta: sistemas podem me manter operacional.\nDecisão: o que vou delegar ou deixar de construir.\nConclusão:" },
+] as const;
 
 const pad = (value: number) => String(value).padStart(2, "0");
 const localDate = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -79,7 +112,26 @@ function normalizeCalendar(raw: unknown): CalendarState {
   return {
     items: Array.isArray(parsed.items) ? parsed.items : [],
     pillars: Array.isArray(parsed.pillars) && parsed.pillars.length ? parsed.pillars : DEFAULT_PILLARS,
+    notes: Array.isArray(parsed.notes) ? parsed.notes : [],
   };
+}
+
+function plannedDate(month: Date, week: number, weekday: number) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const firstMonday = new Date(first);
+  firstMonday.setDate(first.getDate() + ((8 - first.getDay()) % 7));
+  const result = new Date(firstMonday);
+  result.setDate(firstMonday.getDate() + (week - 1) * 7 + ((weekday + 6) % 7));
+  return localDate(result);
+}
+
+function contentWeek(day: Date, month: Date) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const firstMonday = new Date(first);
+  firstMonday.setDate(first.getDate() + ((8 - first.getDay()) % 7));
+  const diff = Math.floor((day.getTime() - firstMonday.getTime()) / 86400000);
+  const week = Math.floor(diff / 7) + 1;
+  return diff >= 0 && week <= 4 ? week : null;
 }
 
 function Login() {
@@ -116,6 +168,7 @@ export default function ContentCalendar() {
   const [calendar, setCalendar] = useState<CalendarState>(EMPTY_STATE);
   const [visibleMonth, setVisibleMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [editing, setEditing] = useState<ContentItem | null>(null);
+  const [noteEditing, setNoteEditing] = useState<CalendarNote | null>(null);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">("all");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -189,6 +242,8 @@ export default function ContentCalendar() {
     return matchesStatus && haystack.includes(query.toLowerCase());
   }), [calendar.items, query, statusFilter]);
 
+  const plannedItems = useMemo(() => MONTH_PLAN.map((plan) => ({ ...plan, date: plannedDate(visibleMonth, plan.week, plan.weekday) })), [visibleMonth]);
+
   const monthItems = calendar.items.filter((item) => item.date.startsWith(`${visibleMonth.getFullYear()}-${pad(visibleMonth.getMonth() + 1)}`));
   const published = monthItems.filter((item) => item.status === "published").length;
   const inProgress = monthItems.filter((item) => ["writing", "recording", "editing"].includes(item.status)).length;
@@ -204,6 +259,18 @@ export default function ContentCalendar() {
     setCalendar((current) => ({ ...current, items: current.items.filter((item) => item.id !== id) }));
     setEditing(null);
     toast.info("Conteúdo removido.");
+  };
+
+  const saveNote = (note: CalendarNote) => {
+    if (!note.text.trim()) return;
+    setCalendar((current) => ({ ...current, notes: [...current.notes.filter((existing) => existing.id !== note.id), note] }));
+    setNoteEditing(null);
+    toast.success("Anotação salva.");
+  };
+
+  const removeNote = (id: string) => {
+    setCalendar((current) => ({ ...current, notes: current.notes.filter((note) => note.id !== id) }));
+    setNoteEditing(null);
   };
 
   if (!authReady || !ready) return <main className="app-shell auth-shell"><div className="auth-card surface loading-card"><div className="brand-line"><span /> Speedy Media OS</div><h1>Carregando calendário...</h1></div></main>;
@@ -226,10 +293,10 @@ export default function ContentCalendar() {
         </header>
 
         <section className="content-stats">
-          <div className="surface content-stat"><span>Planejados no mês</span><strong>{monthItems.length}</strong><small>conteúdos no calendário</small></div>
+          <div className="surface content-stat"><span>Planejados no mês</span><strong>16</strong><small>4 Reels por semana</small></div>
           <div className="surface content-stat"><span>Em produção</span><strong>{inProgress}</strong><small>roteiro, gravação ou edição</small></div>
           <div className="surface content-stat"><span>Publicados</span><strong>{published}</strong><small>{monthItems.length ? Math.round((published / monthItems.length) * 100) : 0}% do plano concluído</small></div>
-          <div className="surface content-stat highlight"><span>Cadência</span><strong>{(monthItems.length / 4.3).toFixed(1)}</strong><small>conteúdos por semana</small></div>
+          <div className="surface content-stat highlight"><span>Cadência</span><strong>4</strong><small>seg · qua · sex · dom</small></div>
         </section>
 
         <section className="calendar-toolbar surface">
@@ -252,13 +319,20 @@ export default function ContentCalendar() {
             {days.map((day) => {
               const key = localDate(day);
               const items = filteredItems.filter((item) => item.date === key);
+              const notes = calendar.notes.filter((note) => note.date === key);
+              const plan = plannedItems.find((planned) => planned.date === key);
               const outside = day.getMonth() !== visibleMonth.getMonth();
               const today = key === localDate(new Date());
+              const week = contentWeek(day, visibleMonth);
               return (
-                <div className={`calendar-day ${outside ? "outside" : ""} ${today ? "today" : ""}`} key={key}>
-                  <div className="day-head"><span>{day.getDate()}</span><button aria-label={`Adicionar conteúdo em ${key}`} onClick={() => setEditing(emptyItem(key))}><Plus size={14} /></button></div>
+                <div className={`calendar-day ${outside ? "outside" : ""} ${today ? "today" : ""} ${week ? `content-week week-${week}` : ""}`} key={key}>
+                  {week && day.getDay() === 1 && <span className="week-label">Semana {week}</span>}
+                  <div className="day-head"><span>{day.getDate()}</span><div className="day-actions"><button title="Adicionar anotação" aria-label={`Adicionar anotação em ${key}`} onClick={() => setNoteEditing({ id: crypto.randomUUID(), date: key, text: "" })}><StickyNote size={13} /></button><button title="Adicionar conteúdo" aria-label={`Adicionar conteúdo em ${key}`} onClick={() => setEditing(emptyItem(key))}><Plus size={14} /></button></div></div>
                   <div className="day-items">
                     {items.map((item) => <button className={`content-chip ${STATUS[item.status].className}`} key={item.id} onClick={() => setEditing(item)}><span>{item.format}</span><strong>{item.title}</strong></button>)}
+                    {!items.length && plan && !outside && <button className="content-chip planned" onClick={() => setEditing({ ...emptyItem(key), title: plan.title, pillar: plan.pillar, hook: plan.hook, body: plan.body, cta: "Quer que eu analise sua operação? Me mande DIAGNÓSTICO." })}><span>{plan.pillar}</span><strong>{plan.title}</strong></button>}
+                    {!outside && <div className="story-plan"><span>Stories</span><strong>{STORY_PLAN[day.getDay()]}</strong></div>}
+                    {notes.map((note) => <button className="calendar-note" key={note.id} onClick={() => setNoteEditing(note)}><StickyNote size={11} /><span>{note.text}</span></button>)}
                   </div>
                 </div>
               );
@@ -270,9 +344,15 @@ export default function ContentCalendar() {
           <div><Sparkles size={18} /><div><strong>Seu fluxo Founder-led Growth</strong><p>Capture a ideia, transforme em roteiro, grave, edite e publique sem perder o contexto.</p></div></div>
           <div className="workflow-steps">{Object.entries(STATUS).map(([key, value], index) => <span key={key}><i className={value.className}>{index + 1}</i>{value.label}{index < 5 && <ArrowRight size={13} />}</span>)}</div>
         </section>
+
+        <section className="recording-guide surface">
+          <div className="recording-preview"><strong>GANCHO FORTE<br />EM ATÉ 3 LINHAS</strong><div><Camera size={34} /></div><b>legenda automática<br />acompanhando a fala</b></div>
+          <div><span className="eyebrow">PADRÃO VISUAL DOS REELS</span><h2>Mateus pensando em voz alta na mesa.</h2><p>Celular vertical e parado, lente 1x na altura dos olhos, vídeo central, gancho no topo e legendas na parte inferior. Use cortes secos apenas para retirar pausas e repetições.</p><div className="recording-tags"><span>40–75 segundos</span><span>Sem teleprompter</span><span>Sem B-roll obrigatório</span><span>4 vídeos em uma sessão</span></div></div>
+        </section>
       </div>
 
       {editing && <ContentEditor item={editing} pillars={calendar.pillars} onClose={() => setEditing(null)} onSave={saveItem} onRemove={removeItem} />}
+      {noteEditing && <NoteEditor note={noteEditing} onClose={() => setNoteEditing(null)} onSave={saveNote} onRemove={removeNote} />}
     </main>
   );
 }
@@ -291,7 +371,7 @@ function ContentEditor({ item, pillars, onClose, onSave, onRemove }: { item: Con
           <label><span>Formato</span><select value={draft.format} onChange={(e) => update("format", e.target.value as ContentFormat)}>{FORMATS.map((format) => <option key={format}>{format}</option>)}</select></label>
           <label><span>Pilar</span><select value={draft.pillar} onChange={(e) => update("pillar", e.target.value)}>{pillars.map((pillar) => <option key={pillar}>{pillar}</option>)}</select></label>
           <label className="wide"><span><Lightbulb size={13} /> Gancho</span><textarea value={draft.hook} onChange={(e) => update("hook", e.target.value)} placeholder="A primeira frase que vai prender a atenção..." rows={2} /></label>
-          <label className="wide"><span>Roteiro / desenvolvimento</span><textarea value={draft.body} onChange={(e) => update("body", e.target.value)} placeholder="Organize a história, os pontos principais e a entrega..." rows={7} /></label>
+          <label className="wide"><span>Mapa de gravação</span><textarea value={draft.body} onChange={(e) => update("body", e.target.value)} placeholder={"Contexto:\nProblema aparente:\nDescoberta ou problema verdadeiro:\nDecisão:\nConclusão:"} rows={9} /></label>
           <label className="wide"><span>CTA</span><input value={draft.cta} onChange={(e) => update("cta", e.target.value)} placeholder="O que a pessoa deve fazer depois de consumir o conteúdo?" /></label>
           <label className="wide"><span>Notas de produção</span><textarea value={draft.notes} onChange={(e) => update("notes", e.target.value)} placeholder="Cenas, referências, local, assets..." rows={3} /></label>
         </div>
@@ -299,6 +379,19 @@ function ContentEditor({ item, pillars, onClose, onSave, onRemove }: { item: Con
           {item.title && <button className="danger-button" onClick={() => onRemove(item.id)}><Trash2 size={15} /> Excluir</button>}
           <div><button className="ghost-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" onClick={() => onSave(draft)}><Check size={16} /> Salvar conteúdo</button></div>
         </footer>
+      </aside>
+    </div>
+  );
+}
+
+function NoteEditor({ note, onClose, onSave, onRemove }: { note: CalendarNote; onClose: () => void; onSave: (note: CalendarNote) => void; onRemove: (id: string) => void }) {
+  const [text, setText] = useState(note.text);
+  return (
+    <div className="editor-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <aside className="note-editor surface elevated">
+        <header><div><span className="editor-kicker"><StickyNote size={15} /> Anotação do dia</span><h2>{new Date(`${note.date}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })}</h2></div><button className="icon-button" onClick={onClose}><X /></button></header>
+        <textarea autoFocus value={text} onChange={(event) => setText(event.target.value)} placeholder="Escreva um lembrete, uma ideia rápida ou algo que aconteceu neste dia..." rows={8} />
+        <footer>{note.text && <button className="danger-button" onClick={() => onRemove(note.id)}><Trash2 size={15} /> Excluir</button>}<div><button className="ghost-btn" onClick={onClose}>Cancelar</button><button className="primary-btn" onClick={() => onSave({ ...note, text })}><Check size={16} /> Salvar anotação</button></div></footer>
       </aside>
     </div>
   );
