@@ -71,7 +71,8 @@ button { cursor: pointer; }
 .day-items { display: grid; gap: 5px; }
 .content-entry { position: relative; min-width: 0; }
 .content-entry .content-chip { padding-right: 31px; }
-.content-check { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(10,11,13,.6); color: rgba(255,255,255,.55); }
+.content-check { position: absolute; top: 50%; right: 6px; transform: translateY(-50%); width: 22px; height: 22px; padding: 0; display: inline-flex; align-items: center; justify-content: center; line-height: 0; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(10,11,13,.6); color: rgba(255,255,255,.55); }
+.content-check svg { display: block; flex: 0 0 auto; }
 .content-check:hover { color: #fff; border-color: var(--success); background: rgba(39,209,127,.16); }
 .content-check.checked { color: #05130c; border-color: var(--success); background: var(--success); }
 .content-chip { width: 100%; padding: 7px 8px; text-align: left; color: #fff; border: 1px solid transparent; border-radius: 6px; min-width: 0; }
@@ -85,9 +86,12 @@ button { cursor: pointer; }
 .content-chip.published { background: rgba(39,209,127,.14); border-color: rgba(39,209,127,.26); }
 .content-chip.planned { background: linear-gradient(135deg, rgba(224,30,55,.14), rgba(224,30,55,.055)); border-color: rgba(224,30,55,.26); border-left: 3px solid var(--primary); }
 .content-chip.planned span { color: #ff9aa7; }
-.story-plan { padding: 6px 7px; border-left: 2px solid rgba(255,255,255,.16); background: rgba(255,255,255,.025); border-radius: 0 5px 5px 0; }
+.story-plan { min-height: 43px; padding: 6px 35px 6px 7px; border-left: 2px solid rgba(255,255,255,.16); background: rgba(255,255,255,.025); border-radius: 0 5px 5px 0; position: relative; transition: background .18s ease, opacity .18s ease; }
 .story-plan span { display: block; color: var(--subtle); font-size: .52rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
 .story-plan strong { display: block; margin-top: 2px; color: #b8bbc1; font-size: .59rem; line-height: 1.25; }
+.story-plan .story-check { right: 7px; }
+.story-plan.completed { background: rgba(39,209,127,.07); border-left-color: var(--success); }
+.story-plan.completed strong { color: #8daca0; text-decoration: line-through; }
 .calendar-note { width: 100%; display: flex; align-items: flex-start; gap: 5px; padding: 6px 7px; border: 1px solid rgba(247,183,51,.2); border-radius: 6px; background: rgba(247,183,51,.09); color: #ecd795; text-align: left; }
 .calendar-note svg { flex: 0 0 auto; margin-top: 1px; }
 .calendar-note span { font-size: .64rem; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
@@ -147,6 +151,25 @@ button { cursor: pointer; }
 .insight-delete { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(224,30,55,.25); border-radius: 7px; background: var(--primary-soft); color: #ff7788; }
 .classification-note { display: flex; gap: 9px; align-items: baseline; padding-top: 12px; border-top: 1px solid var(--line); color: var(--subtle); font-size: .7rem; line-height: 1.45; }
 .classification-note strong { color: #ddd; white-space: nowrap; }
+.stories-playbook { padding: 22px; display: grid; gap: 18px; }
+.stories-playbook-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.stories-playbook-heading h2 { margin: 5px 0; font-size: 1.45rem; }
+.stories-playbook-heading p { max-width: 880px; color: var(--subtle); font-size: .82rem; line-height: 1.55; }
+.story-frequency { padding: 7px 10px; border: 1px solid rgba(224,30,55,.28); border-radius: 999px; background: var(--primary-soft); color: #ff9aa7; font-size: .7rem; font-weight: 800; white-space: nowrap; }
+.stories-playbook-grid { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 10px; }
+.story-guide-card { min-width: 0; padding: 15px; border: 1px solid var(--line); border-radius: 9px; background: linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.015)); }
+.story-guide-card > header { display: flex; align-items: flex-start; gap: 9px; }
+.story-guide-card > header > span { width: 27px; height: 27px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 50%; background: var(--primary-soft); color: #ff8f9e; font-size: .66rem; font-weight: 900; }
+.story-guide-card h3 { font-size: .88rem; line-height: 1.25; }
+.story-guide-card header p { margin-top: 3px; color: var(--subtle); font-size: .6rem; line-height: 1.35; }
+.story-description { margin-top: 12px; color: #c2c4c9; font-size: .69rem; line-height: 1.48; }
+.story-guide-card ol { margin: 12px 0 0; padding-left: 18px; color: #ddd; font-size: .67rem; line-height: 1.5; }
+.story-guide-card li + li { margin-top: 4px; }
+.story-example { margin-top: 13px; padding: 10px; border-left: 2px solid var(--primary); border-radius: 0 6px 6px 0; background: rgba(224,30,55,.07); }
+.story-example strong { color: #ff8f9e; font-size: .58rem; text-transform: uppercase; letter-spacing: .06em; }
+.story-example p { margin-top: 4px; color: #e4e4e6; font-size: .66rem; line-height: 1.48; }
+.story-rule { display: flex; gap: 8px; align-items: baseline; padding-top: 14px; border-top: 1px solid var(--line); color: var(--subtle); font-size: .72rem; line-height: 1.5; }
+.story-rule strong { color: #f0f0f1; white-space: nowrap; }
 
 @media (max-width: 1050px) {
   .content-header { align-items: flex-start; flex-direction: column; }
@@ -155,6 +178,7 @@ button { cursor: pointer; }
   .recording-guide { grid-template-columns: 150px minmax(0,1fr); }
   .insight-card { grid-template-columns: 1fr; }
   .insight-actions { flex-wrap: wrap; }
+  .stories-playbook-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .calendar-grid, .weekday-row { min-width: 900px; }
   .calendar-shell { overflow-x: auto; }
 }
@@ -179,6 +203,8 @@ button { cursor: pointer; }
   .note-editor > footer { flex-direction: column-reverse; }
   .note-editor > footer > div { margin-left: 0; }
   .insights-heading, .classification-note { flex-direction: column; }
+  .stories-playbook-heading, .story-rule { flex-direction: column; }
+  .stories-playbook-grid { grid-template-columns: 1fr; }
   .insight-capture { padding: 10px; flex-wrap: wrap; }
   .insight-capture input { flex-basis: calc(100% - 38px); }
   .insight-capture .primary-btn { width: 100%; }

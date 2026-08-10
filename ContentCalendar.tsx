@@ -44,6 +44,7 @@ type CalendarState = {
   pillars: string[];
   notes: CalendarNote[];
   insights: Insight[];
+  completedStories: string[];
 };
 
 const STATUS: Record<ContentStatus, { label: string; className: string }> = {
@@ -57,7 +58,7 @@ const STATUS: Record<ContentStatus, { label: string; className: string }> = {
 
 const FORMATS: ContentFormat[] = ["Reel", "Carrossel", "Story", "Foto", "Live"];
 const DEFAULT_PILLARS = ["História real", "Análise externa", "Bastidor da Speedy", "Opinião forte", "Fundador pessoal"];
-const EMPTY_STATE: CalendarState = { items: [], pillars: DEFAULT_PILLARS, notes: [], insights: [] };
+const EMPTY_STATE: CalendarState = { items: [], pillars: DEFAULT_PILLARS, notes: [], insights: [], completedStories: [] };
 
 const STORY_PLAN = [
   "Constância",
@@ -68,6 +69,49 @@ const STORY_PLAN = [
   "Constância · prova · diagnóstico",
   "Constância",
 ];
+
+const STORY_PLAYBOOK = [
+  {
+    title: "Constância",
+    format: "Vídeo curto ou foto",
+    duration: "1–2 Stories",
+    description: "Apareça sem precisar ensinar algo complexo. O objetivo é manter presença e mostrar que existe uma pessoa conduzindo a Speedy.",
+    steps: ["Mostre onde você está ou no que está trabalhando.", "Acrescente uma frase de contexto."],
+    example: "Vídeo: ‘Começando a semana revisando as campanhas antes da primeira reunião.’",
+  },
+  {
+    title: "Situação real · decisão",
+    format: "Vídeo → print → vídeo",
+    duration: "2–4 Stories",
+    description: "Conte algo que realmente aconteceu com a agência ou com um cliente e mostre como você pensou.",
+    steps: ["Situação: o que aconteceu?", "Diagnóstico: o que você percebeu?", "Decisão: o que fará agora e por quê?"],
+    example: "‘Os leads estavam baratos, mas ninguém agendava. Em vez de aumentar o orçamento, decidi ajustar a oferta e o formulário.’",
+  },
+  {
+    title: "Bastidor · melhoria",
+    format: "Vídeo ou gravação de tela",
+    duration: "2–3 Stories",
+    description: "Mostre uma parte imperfeita da operação e a melhoria que está sendo feita, sem transformar o Story em propaganda.",
+    steps: ["Mostre o processo ou problema.", "Explique o que estava dificultando o trabalho.", "Mostre a mudança aplicada."],
+    example: "Gravação do dashboard: ‘Eu demorava demais para registrar cada conteúdo. Simplifiquei o fluxo para decidir e produzir mais rápido.’",
+  },
+  {
+    title: "Opinião · conclusão",
+    format: "Vídeo falando para a câmera",
+    duration: "2–3 Stories",
+    description: "Defenda uma opinião baseada na sua experiência. Conclusão é a frase final que transforma a opinião em uma orientação prática.",
+    steps: ["Opinião: diga claramente no que você acredita.", "Motivo: explique por que pensa assim.", "Conclusão: diga o que a pessoa deveria fazer com isso."],
+    example: "‘Lead barato não é sinônimo de campanha boa. Se ele não vira conversa ou venda, o barato saiu caro. Conclusão: avalie a campanha até a receita, não só até o formulário.’",
+  },
+  {
+    title: "Prova · diagnóstico",
+    format: "Print com narração ou vídeo",
+    duration: "2–4 Stories",
+    description: "Use um dado, resultado ou tela como evidência e explique o que aquele número realmente indica. Oculte informações do cliente.",
+    steps: ["Mostre a prova.", "Destaque o número relevante.", "Faça o diagnóstico.", "Indique o próximo passo."],
+    example: "Print sem dados sensíveis: ‘O CPL caiu, mas as reuniões não subiram. O gargalo agora está depois do lead; vamos revisar o atendimento.’",
+  },
+] as const;
 
 const MONTH_PLAN = [
   { week: 1, weekday: 1, pillar: "História real", title: "O cliente que pediu mais leads", hook: "O cliente me pediu mais leads. Eu disse que esse não era o próximo passo.", body: "Contexto:\nProblema aparente: faltavam leads.\nDescoberta: identificar o verdadeiro gargalo nos números.\nDecisão:\nConclusão:" },
@@ -116,6 +160,7 @@ function normalizeCalendar(raw: unknown): CalendarState {
     pillars: Array.isArray(parsed.pillars) && parsed.pillars.length ? parsed.pillars : DEFAULT_PILLARS,
     notes: Array.isArray(parsed.notes) ? parsed.notes : [],
     insights: Array.isArray(parsed.insights) ? parsed.insights : [],
+    completedStories: Array.isArray(parsed.completedStories) ? parsed.completedStories : [],
   };
 }
 
@@ -315,7 +360,18 @@ export default function ContentCalendar() {
   const togglePublished = (item: ContentItem) => {
     const nextStatus: ContentStatus = item.status === "published" ? "scheduled" : "published";
     setCalendar((current) => ({ ...current, items: [...current.items.filter((existing) => existing.id !== item.id), { ...item, status: nextStatus }] }));
-    toast.success(nextStatus === "published" ? "Vídeo concluído e registrado." : "Vídeo reaberto no calendário.");
+    toast.success(nextStatus === "published" ? "Conteúdo concluído e registrado." : "Conteúdo reaberto no calendário.");
+  };
+
+  const toggleStory = (date: string) => {
+    const completed = calendar.completedStories.includes(date);
+    setCalendar((current) => ({
+      ...current,
+      completedStories: completed
+        ? current.completedStories.filter((storyDate) => storyDate !== date)
+        : [...current.completedStories, date],
+    }));
+    toast.success(completed ? "Story reaberto no calendário." : "Story publicado e registrado.");
   };
 
   const itemFromPlan = (plan: (typeof plannedItems)[number]) => ({
@@ -381,11 +437,11 @@ export default function ContentCalendar() {
               return (
                 <div className={`calendar-day ${outside ? "outside" : ""} ${today ? "today" : ""} ${week ? `content-week week-${week}` : ""}`} key={key}>
                   {week && day.getDay() === 1 && <span className="week-label">Semana {week}</span>}
-                  <div className="day-head"><span>{day.getDate()}</span><div className="day-actions"><button title="Adicionar anotação" aria-label={`Adicionar anotação em ${key}`} onClick={() => setNoteEditing({ id: crypto.randomUUID(), date: key, text: "" })}><StickyNote size={13} /></button><button title="Adicionar conteúdo" aria-label={`Adicionar conteúdo em ${key}`} onClick={() => setEditing(emptyItem(key))}><Plus size={14} /></button></div></div>
+                  <div className="day-head"><span>{day.getDate()}</span><div className="day-actions"><button title="Adicionar anotação" aria-label={`Adicionar anotação em ${key}`} onClick={() => setNoteEditing({ id: crypto.randomUUID(), date: key, text: "" })}><StickyNote size={13} /></button><button title="Adicionar conteúdo ou Story" aria-label={`Adicionar conteúdo ou Story em ${key}`} onClick={() => setEditing(emptyItem(key))}><Plus size={14} /></button></div></div>
                   <div className="day-items">
                     {items.map((item) => <div className="content-entry" key={item.id}><button className={`content-chip ${STATUS[item.status].className}`} onClick={() => setEditing(item)}><span>{item.format}</span><strong>{item.title}</strong></button><button className={`content-check ${item.status === "published" ? "checked" : ""}`} title={item.status === "published" ? "Reabrir vídeo" : "Marcar vídeo como concluído"} aria-label={item.status === "published" ? `Reabrir ${item.title}` : `Concluir ${item.title}`} onClick={() => togglePublished(item)}><Check size={13} /></button></div>)}
                     {!items.length && plan && !outside && <div className="content-entry"><button className="content-chip planned" onClick={() => setEditing(itemFromPlan(plan))}><span>{plan.pillar}</span><strong>{plan.title}</strong></button><button className="content-check" title="Marcar vídeo como concluído" aria-label={`Concluir ${plan.title}`} onClick={() => togglePublished(itemFromPlan(plan))}><Check size={13} /></button></div>}
-                    {!outside && <div className="story-plan"><span>Stories</span><strong>{STORY_PLAN[day.getDay()]}</strong></div>}
+                    {!outside && <div className={`story-plan ${calendar.completedStories.includes(key) ? "completed" : ""}`}><div><span>Stories</span><strong>{STORY_PLAN[day.getDay()]}</strong></div><button className={`content-check story-check ${calendar.completedStories.includes(key) ? "checked" : ""}`} title={calendar.completedStories.includes(key) ? "Reabrir Story" : "Marcar Story como publicado"} aria-label={calendar.completedStories.includes(key) ? `Reabrir Story de ${key}` : `Concluir Story de ${key}`} onClick={() => toggleStory(key)}><Check size={13} /></button></div>}
                     {notes.map((note) => <button className="calendar-note" key={note.id} onClick={() => setNoteEditing(note)}><StickyNote size={11} /><span>{note.text}</span></button>)}
                   </div>
                 </div>
@@ -412,6 +468,14 @@ export default function ContentCalendar() {
             {calendar.insights.map((insight) => <article className="insight-card" key={insight.id}><div><p>{insight.text}</p><small>{new Date(insight.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</small></div><div className="insight-actions"><select value={insight.category} onChange={(event) => updateInsightCategory(insight.id, event.target.value)} aria-label={`Categoria de ${insight.text}`}>{calendar.pillars.map((pillar) => <option key={pillar}>{pillar}</option>)}</select><button className="ghost-btn" onClick={() => setEditing({ ...emptyItem(), title: insight.text, pillar: insight.category, hook: insight.text, notes: "Criado a partir da caixa de Insights." })}>Agendar <ArrowRight size={14} /></button><button className="insight-delete" onClick={() => removeInsight(insight.id)} aria-label={`Excluir ${insight.text}`}><Trash2 size={15} /></button></div></article>)}
           </div>
           <div className="classification-note"><strong>Como a categoria é escolhida?</strong><span>Palavras como “cliente”, “campanha” e “resultado” indicam História real; “Speedy”, “processo” e “dashboard” indicam Bastidor; “acho”, “discordo” e “métrica” indicam Opinião. A sugestão nunca é definitiva: o seletor permite alterar.</span></div>
+        </section>
+
+        <section className="stories-playbook surface">
+          <div className="stories-playbook-heading"><div><span className="eyebrow">GUIA PRÁTICO</span><h2>Playbook de Stories</h2><p>Use o tema indicado no calendário e siga a estrutura abaixo. Não precisa produzir: grave de forma natural, com texto curto na tela e informações de clientes ocultas.</p></div><span className="story-frequency">Stories todos os dias</span></div>
+          <div className="stories-playbook-grid">
+            {STORY_PLAYBOOK.map((story, index) => <article className="story-guide-card" key={story.title}><header><span>{pad(index + 1)}</span><div><h3>{story.title}</h3><p>{story.format} · {story.duration}</p></div></header><p className="story-description">{story.description}</p><ol>{story.steps.map((step) => <li key={step}>{step}</li>)}</ol><div className="story-example"><strong>Exemplo pronto</strong><p>{story.example}</p></div></article>)}
+          </div>
+          <div className="story-rule"><strong>Regra simples:</strong><span>situação mostra o que aconteceu; opinião mostra no que você acredita; conclusão encerra com a decisão, aprendizado ou ação prática.</span></div>
         </section>
       </div>
 
