@@ -37,11 +37,13 @@ type ContentItem = {
 };
 
 type CalendarNote = { id: string; date: string; text: string };
+type Insight = { id: string; text: string; category: string; createdAt: string };
 
 type CalendarState = {
   items: ContentItem[];
   pillars: string[];
   notes: CalendarNote[];
+  insights: Insight[];
 };
 
 const STATUS: Record<ContentStatus, { label: string; className: string }> = {
@@ -55,7 +57,7 @@ const STATUS: Record<ContentStatus, { label: string; className: string }> = {
 
 const FORMATS: ContentFormat[] = ["Reel", "Carrossel", "Story", "Foto", "Live"];
 const DEFAULT_PILLARS = ["História real", "Análise externa", "Bastidor da Speedy", "Opinião forte", "Fundador pessoal"];
-const EMPTY_STATE: CalendarState = { items: [], pillars: DEFAULT_PILLARS, notes: [] };
+const EMPTY_STATE: CalendarState = { items: [], pillars: DEFAULT_PILLARS, notes: [], insights: [] };
 
 const STORY_PLAN = [
   "Constância",
@@ -113,7 +115,25 @@ function normalizeCalendar(raw: unknown): CalendarState {
     items: Array.isArray(parsed.items) ? parsed.items : [],
     pillars: Array.isArray(parsed.pillars) && parsed.pillars.length ? parsed.pillars : DEFAULT_PILLARS,
     notes: Array.isArray(parsed.notes) ? parsed.notes : [],
+    insights: Array.isArray(parsed.insights) ? parsed.insights : [],
   };
+}
+
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  "História real": ["cliente", "campanha", "lead", "anúncio", "resultado", "case", "orçamento", "vendeu", "contato"],
+  "Análise externa": ["concorrente", "clínica", "empresa", "perfil", "oferta", "site", "publicidade", "criativo de"],
+  "Bastidor da Speedy": ["speedy", "dashboard", "processo", "margem", "aquisição", "contratação", "sistema", "equipe", "agência"],
+  "Opinião forte": ["acho", "discordo", "ninguém", "deveria", "erro", "mentira", "métrica", "lead barato", "não funciona"],
+  "Fundador pessoal": ["eu", "inglês", "fundador", "operação", "aprendi", "medo", "travei", "minha rotina", "decidi"],
+};
+
+function classifyInsight(text: string) {
+  const normalized = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const scores = Object.entries(CATEGORY_KEYWORDS).map(([category, words]) => ({
+    category,
+    score: words.reduce((total, word) => total + (normalized.includes(word.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()) ? 1 : 0), 0),
+  })).sort((a, b) => b.score - a.score);
+  return scores[0].score > 0 ? scores[0].category : "Fundador pessoal";
 }
 
 function plannedDate(month: Date, week: number, weekday: number) {
@@ -170,6 +190,7 @@ export default function ContentCalendar() {
   const [editing, setEditing] = useState<ContentItem | null>(null);
   const [noteEditing, setNoteEditing] = useState<CalendarNote | null>(null);
   const [query, setQuery] = useState("");
+  const [insightDraft, setInsightDraft] = useState("");
   const [statusFilter, setStatusFilter] = useState<ContentStatus | "all">("all");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
@@ -273,6 +294,39 @@ export default function ContentCalendar() {
     setNoteEditing(null);
   };
 
+  const addInsight = (event: FormEvent) => {
+    event.preventDefault();
+    const text = insightDraft.trim();
+    if (!text) return;
+    const insight: Insight = { id: crypto.randomUUID(), text, category: classifyInsight(text), createdAt: new Date().toISOString() };
+    setCalendar((current) => ({ ...current, insights: [insight, ...current.insights] }));
+    setInsightDraft("");
+    toast.success(`Insight classificado como ${insight.category}.`);
+  };
+
+  const updateInsightCategory = (id: string, category: string) => {
+    setCalendar((current) => ({ ...current, insights: current.insights.map((insight) => insight.id === id ? { ...insight, category } : insight) }));
+  };
+
+  const removeInsight = (id: string) => {
+    setCalendar((current) => ({ ...current, insights: current.insights.filter((insight) => insight.id !== id) }));
+  };
+
+  const togglePublished = (item: ContentItem) => {
+    const nextStatus: ContentStatus = item.status === "published" ? "scheduled" : "published";
+    setCalendar((current) => ({ ...current, items: [...current.items.filter((existing) => existing.id !== item.id), { ...item, status: nextStatus }] }));
+    toast.success(nextStatus === "published" ? "Vídeo concluído e registrado." : "Vídeo reaberto no calendário.");
+  };
+
+  const itemFromPlan = (plan: (typeof plannedItems)[number]) => ({
+    ...emptyItem(plan.date),
+    title: plan.title,
+    pillar: plan.pillar,
+    hook: plan.hook,
+    body: plan.body,
+    cta: "Quer que eu analise sua operação? Me mande DIAGNÓSTICO.",
+  });
+
   if (!authReady || !ready) return <main className="app-shell auth-shell"><div className="auth-card surface loading-card"><div className="brand-line"><span /> Speedy Media OS</div><h1>Carregando calendário...</h1></div></main>;
   if (!session) return <Login />;
 
@@ -295,7 +349,7 @@ export default function ContentCalendar() {
         <section className="content-stats">
           <div className="surface content-stat"><span>Planejados no mês</span><strong>16</strong><small>4 Reels por semana</small></div>
           <div className="surface content-stat"><span>Em produção</span><strong>{inProgress}</strong><small>roteiro, gravação ou edição</small></div>
-          <div className="surface content-stat"><span>Publicados</span><strong>{published}</strong><small>{monthItems.length ? Math.round((published / monthItems.length) * 100) : 0}% do plano concluído</small></div>
+          <div className="surface content-stat"><span>Publicados</span><strong>{published}</strong><small>{Math.round((published / 16) * 100)}% do plano concluído</small></div>
           <div className="surface content-stat highlight"><span>Cadência</span><strong>4</strong><small>seg · qua · sex · dom</small></div>
         </section>
 
@@ -329,8 +383,8 @@ export default function ContentCalendar() {
                   {week && day.getDay() === 1 && <span className="week-label">Semana {week}</span>}
                   <div className="day-head"><span>{day.getDate()}</span><div className="day-actions"><button title="Adicionar anotação" aria-label={`Adicionar anotação em ${key}`} onClick={() => setNoteEditing({ id: crypto.randomUUID(), date: key, text: "" })}><StickyNote size={13} /></button><button title="Adicionar conteúdo" aria-label={`Adicionar conteúdo em ${key}`} onClick={() => setEditing(emptyItem(key))}><Plus size={14} /></button></div></div>
                   <div className="day-items">
-                    {items.map((item) => <button className={`content-chip ${STATUS[item.status].className}`} key={item.id} onClick={() => setEditing(item)}><span>{item.format}</span><strong>{item.title}</strong></button>)}
-                    {!items.length && plan && !outside && <button className="content-chip planned" onClick={() => setEditing({ ...emptyItem(key), title: plan.title, pillar: plan.pillar, hook: plan.hook, body: plan.body, cta: "Quer que eu analise sua operação? Me mande DIAGNÓSTICO." })}><span>{plan.pillar}</span><strong>{plan.title}</strong></button>}
+                    {items.map((item) => <div className="content-entry" key={item.id}><button className={`content-chip ${STATUS[item.status].className}`} onClick={() => setEditing(item)}><span>{item.format}</span><strong>{item.title}</strong></button><button className={`content-check ${item.status === "published" ? "checked" : ""}`} title={item.status === "published" ? "Reabrir vídeo" : "Marcar vídeo como concluído"} aria-label={item.status === "published" ? `Reabrir ${item.title}` : `Concluir ${item.title}`} onClick={() => togglePublished(item)}><Check size={13} /></button></div>)}
+                    {!items.length && plan && !outside && <div className="content-entry"><button className="content-chip planned" onClick={() => setEditing(itemFromPlan(plan))}><span>{plan.pillar}</span><strong>{plan.title}</strong></button><button className="content-check" title="Marcar vídeo como concluído" aria-label={`Concluir ${plan.title}`} onClick={() => togglePublished(itemFromPlan(plan))}><Check size={13} /></button></div>}
                     {!outside && <div className="story-plan"><span>Stories</span><strong>{STORY_PLAN[day.getDay()]}</strong></div>}
                     {notes.map((note) => <button className="calendar-note" key={note.id} onClick={() => setNoteEditing(note)}><StickyNote size={11} /><span>{note.text}</span></button>)}
                   </div>
@@ -348,6 +402,16 @@ export default function ContentCalendar() {
         <section className="recording-guide surface">
           <div className="recording-preview"><strong>GANCHO FORTE<br />EM ATÉ 3 LINHAS</strong><div><Camera size={34} /></div><b>legenda automática<br />acompanhando a fala</b></div>
           <div><span className="eyebrow">PADRÃO VISUAL DOS REELS</span><h2>Mateus pensando em voz alta na mesa.</h2><p>Celular vertical e parado, lente 1x na altura dos olhos, vídeo central, gancho no topo e legendas na parte inferior. Use cortes secos apenas para retirar pausas e repetições.</p><div className="recording-tags"><span>40–75 segundos</span><span>Sem teleprompter</span><span>Sem B-roll obrigatório</span><span>4 vídeos em uma sessão</span></div></div>
+        </section>
+
+        <section className="insights-panel surface">
+          <div className="insights-heading"><div><span className="eyebrow">CAIXA DE CAPTURA</span><h2>Insights e ideias</h2><p>Anote em uma frase. O sistema sugere a categoria automaticamente e você pode corrigir quando quiser.</p></div><span className="insight-count">{calendar.insights.length} {calendar.insights.length === 1 ? "ideia" : "ideias"}</span></div>
+          <form className="insight-capture" onSubmit={addInsight}><Lightbulb size={19} /><input value={insightDraft} onChange={(event) => setInsightDraft(event.target.value)} placeholder="Ex.: Cliente queria aumentar o orçamento, mas o problema estava no atendimento..." /><button className="primary-btn" type="submit"><Plus size={16} /> Adicionar insight</button></form>
+          <div className="insights-list">
+            {!calendar.insights.length && <div className="empty-insights"><Sparkles size={19} /><span>Suas ideias rápidas vão aparecer aqui, sem precisar preencher um roteiro inteiro.</span></div>}
+            {calendar.insights.map((insight) => <article className="insight-card" key={insight.id}><div><p>{insight.text}</p><small>{new Date(insight.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}</small></div><div className="insight-actions"><select value={insight.category} onChange={(event) => updateInsightCategory(insight.id, event.target.value)} aria-label={`Categoria de ${insight.text}`}>{calendar.pillars.map((pillar) => <option key={pillar}>{pillar}</option>)}</select><button className="ghost-btn" onClick={() => setEditing({ ...emptyItem(), title: insight.text, pillar: insight.category, hook: insight.text, notes: "Criado a partir da caixa de Insights." })}>Agendar <ArrowRight size={14} /></button><button className="insight-delete" onClick={() => removeInsight(insight.id)} aria-label={`Excluir ${insight.text}`}><Trash2 size={15} /></button></div></article>)}
+          </div>
+          <div className="classification-note"><strong>Como a categoria é escolhida?</strong><span>Palavras como “cliente”, “campanha” e “resultado” indicam História real; “Speedy”, “processo” e “dashboard” indicam Bastidor; “acho”, “discordo” e “métrica” indicam Opinião. A sugestão nunca é definitiva: o seletor permite alterar.</span></div>
         </section>
       </div>
 

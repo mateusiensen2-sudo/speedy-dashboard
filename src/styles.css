@@ -69,6 +69,11 @@ button { cursor: pointer; }
 .calendar-day:hover .day-head button { opacity: 1; }
 .day-actions { display: flex; align-items: center; gap: 1px; }
 .day-items { display: grid; gap: 5px; }
+.content-entry { position: relative; min-width: 0; }
+.content-entry .content-chip { padding-right: 31px; }
+.content-check { position: absolute; top: 50%; right: 5px; transform: translateY(-50%); width: 21px; height: 21px; display: grid; place-items: center; border-radius: 50%; border: 1px solid rgba(255,255,255,.2); background: rgba(10,11,13,.6); color: rgba(255,255,255,.55); }
+.content-check:hover { color: #fff; border-color: var(--success); background: rgba(39,209,127,.16); }
+.content-check.checked { color: #05130c; border-color: var(--success); background: var(--success); }
 .content-chip { width: 100%; padding: 7px 8px; text-align: left; color: #fff; border: 1px solid transparent; border-radius: 6px; min-width: 0; }
 .content-chip span { display: block; font-size: .58rem; font-weight: 900; text-transform: uppercase; opacity: .72; margin-bottom: 2px; }
 .content-chip strong { display: block; font-size: .7rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -123,12 +128,33 @@ button { cursor: pointer; }
 .note-editor > textarea:focus { border-color: rgba(247,183,51,.6); box-shadow: 0 0 0 3px rgba(247,183,51,.1); }
 .note-editor > footer { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; }
 .note-editor > footer > div { display: flex; gap: 8px; margin-left: auto; }
+.insights-panel { padding: 22px; display: grid; gap: 17px; }
+.insights-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+.insights-heading h2 { margin: 5px 0 5px; font-size: 1.45rem; }
+.insights-heading p { color: var(--subtle); font-size: .82rem; }
+.insight-count { padding: 7px 10px; border: 1px solid var(--line); border-radius: 999px; color: var(--subtle); font-size: .7rem; font-weight: 800; white-space: nowrap; }
+.insight-capture { min-height: 52px; display: flex; align-items: center; gap: 11px; padding: 5px 5px 5px 15px; border: 1px solid rgba(224,30,55,.26); border-radius: 9px; background: linear-gradient(90deg, rgba(224,30,55,.08), rgba(255,255,255,.025)); color: var(--primary); }
+.insight-capture input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: #fff; }
+.insight-capture input::placeholder { color: #777b83; }
+.insights-list { display: grid; gap: 8px; }
+.empty-insights { min-height: 78px; display: flex; align-items: center; justify-content: center; gap: 9px; border: 1px dashed var(--line); border-radius: 8px; color: var(--subtle); font-size: .78rem; }
+.empty-insights svg { color: var(--primary); }
+.insight-card { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 15px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 8px; background: rgba(255,255,255,.025); }
+.insight-card p { color: #f2f2f3; font-size: .84rem; line-height: 1.4; }
+.insight-card small { display: block; margin-top: 4px; color: var(--subtle); font-size: .65rem; text-transform: uppercase; }
+.insight-actions { display: flex; align-items: center; gap: 7px; }
+.insight-actions select { min-height: 38px; max-width: 180px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: #202226; color: #fff; font-size: .72rem; }
+.insight-delete { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid rgba(224,30,55,.25); border-radius: 7px; background: var(--primary-soft); color: #ff7788; }
+.classification-note { display: flex; gap: 9px; align-items: baseline; padding-top: 12px; border-top: 1px solid var(--line); color: var(--subtle); font-size: .7rem; line-height: 1.45; }
+.classification-note strong { color: #ddd; white-space: nowrap; }
 
 @media (max-width: 1050px) {
   .content-header { align-items: flex-start; flex-direction: column; }
   .content-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .calendar-toolbar, .workflow { align-items: flex-start; flex-direction: column; }
   .recording-guide { grid-template-columns: 150px minmax(0,1fr); }
+  .insight-card { grid-template-columns: 1fr; }
+  .insight-actions { flex-wrap: wrap; }
   .calendar-grid, .weekday-row { min-width: 900px; }
   .calendar-shell { overflow-x: auto; }
 }
@@ -152,6 +178,11 @@ button { cursor: pointer; }
   .recording-preview { width: 150px; }
   .note-editor > footer { flex-direction: column-reverse; }
   .note-editor > footer > div { margin-left: 0; }
+  .insights-heading, .classification-note { flex-direction: column; }
+  .insight-capture { padding: 10px; flex-wrap: wrap; }
+  .insight-capture input { flex-basis: calc(100% - 38px); }
+  .insight-capture .primary-btn { width: 100%; }
+  .insight-actions select { max-width: none; flex: 1 1 100%; }
 }
 
 .app-shell {
