@@ -72,7 +72,12 @@ type Funnel = {
   ticket: number;
 };
 
-type Market = Funnel;
+type Market = Funnel & {
+  averageMrr: number;
+  averageContractMonths: number;
+  immediateRevenue: number;
+  newMrr: number;
+};
 
 type MonthRow = {
   month: string;
@@ -173,8 +178,8 @@ const DEFAULTS: AppState = {
     safeMeetings: 12,
   },
   funnel: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0 },
-  br: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0 },
-  us: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0 },
+  br: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
+  us: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
   months: defaultMonths,
   revenueBase: DEFAULT_REVENUE_BASE,
   tasks: [
@@ -195,8 +200,8 @@ const SUGGESTIONS = [
 
 const COMMERCIAL_SHEET_CONFIG = {
   id: "158zITytJmMky2kzdeAGRpLC5HOK31Y_veaQsYrkyOfM",
-  brTotalRange: "D77:P77",
-  usTotalRange: "D116:P116",
+  brTotalRange: "D77:S77",
+  usTotalRange: "D116:S116",
 };
 
 const REVENUE_SHEET_CONFIG = {
@@ -332,6 +337,10 @@ function sheetTotalToMarket(row: unknown[]): Market {
     proposals: 0,
     closed: parseSheetNumber(row[7]),
     ticket: parseSheetNumber(row[8]),
+    averageMrr: parseSheetNumber(row[9]),
+    averageContractMonths: parseSheetNumber(row[10]),
+    immediateRevenue: parseSheetNumber(row[11]),
+    newMrr: parseSheetNumber(row[12]),
   };
 }
 
@@ -662,7 +671,7 @@ export default function Index() {
       { key: "meetingsBooked", label: "Reuniões agendadas", conv: conv(market.meetingsBooked, market.qualified), convLabel: "lead → reunião" },
       { key: "meetingsDone", label: "Reuniões realizadas", conv: conv(market.meetingsDone, market.meetingsBooked), convLabel: "show-up" },
       { key: "closed", label: "Clientes fechados", conv: conv(market.closed, market.meetingsDone), convLabel: "reunião → cliente" },
-      { key: "ticket", label: "Ticket", money: true, conv: null, convLabel: "" },
+      { key: "ticket", label: "Valor inicial médio", money: true, conv: null, convLabel: "" },
     ];
 
     return (
@@ -950,7 +959,10 @@ export default function Index() {
                       <div className="metric-box"><span>Leads qualificados</span><strong>{NUM(market.qualified)}</strong></div>
                       <div className="metric-box"><span>Reuniões realizadas</span><strong>{NUM(market.meetingsDone)}</strong></div>
                       <div className="metric-box"><span>Clientes fechados</span><strong>{NUM(market.closed)}</strong></div>
-                      <div className="metric-box"><span>Ticket</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>Faturamento imediato</span><strong className={moneyClass}>{market.immediateRevenue ? BRL(market.immediateRevenue) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>MRR novo</span><strong className={moneyClass}>{market.newMrr ? BRL(market.newMrr) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>Duração média</span><strong>{market.averageContractMonths ? `${NUM(market.averageContractMonths)} meses` : "Em validação"}</strong></div>
                       <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? BRL(cpl) : "Em validação"}</strong></div>
                       <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? BRL(cac) : "Em validação"}</strong></div>
                     </div>
