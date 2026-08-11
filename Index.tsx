@@ -73,6 +73,7 @@ type Funnel = {
 };
 
 type Market = Funnel & {
+  averageInitial: number;
   averageMrr: number;
   averageContractMonths: number;
   immediateRevenue: number;
@@ -178,8 +179,8 @@ const DEFAULTS: AppState = {
     safeMeetings: 12,
   },
   funnel: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0 },
-  br: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
-  us: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
+  br: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageInitial: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
+  us: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageInitial: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
   months: defaultMonths,
   revenueBase: DEFAULT_REVENUE_BASE,
   tasks: [
@@ -328,6 +329,8 @@ function rowsToRevenueBase(rows: unknown[][], monthSheet: string): RevenueBase {
 }
 
 function sheetTotalToMarket(row: unknown[]): Market {
+  const closed = parseSheetNumber(row[7]);
+  const immediateRevenue = parseSheetNumber(row[11]);
   return {
     investment: parseSheetNumber(row[1]),
     leads: parseSheetNumber(row[2]),
@@ -335,11 +338,12 @@ function sheetTotalToMarket(row: unknown[]): Market {
     meetingsDone: parseSheetNumber(row[5]),
     meetingsBooked: parseSheetNumber(row[6]),
     proposals: 0,
-    closed: parseSheetNumber(row[7]),
+    closed,
     ticket: parseSheetNumber(row[8]),
+    averageInitial: closed > 0 ? immediateRevenue / closed : 0,
     averageMrr: parseSheetNumber(row[9]),
     averageContractMonths: parseSheetNumber(row[10]),
-    immediateRevenue: parseSheetNumber(row[11]),
+    immediateRevenue,
     newMrr: parseSheetNumber(row[12]),
   };
 }
@@ -671,7 +675,9 @@ export default function Index() {
       { key: "meetingsBooked", label: "Reuniões agendadas", conv: conv(market.meetingsBooked, market.qualified), convLabel: "lead → reunião" },
       { key: "meetingsDone", label: "Reuniões realizadas", conv: conv(market.meetingsDone, market.meetingsBooked), convLabel: "show-up" },
       { key: "closed", label: "Clientes fechados", conv: conv(market.closed, market.meetingsDone), convLabel: "reunião → cliente" },
-      { key: "ticket", label: "Valor inicial médio", money: true, conv: null, convLabel: "" },
+      { key: "averageInitial", label: "Valor inicial médio", money: true, conv: null, convLabel: "" },
+      { key: "averageMrr", label: "MRR médio", money: true, conv: null, convLabel: "" },
+      { key: "ticket", label: "Ticket mensal médio", money: true, conv: null, convLabel: "" },
     ];
 
     return (
@@ -959,7 +965,8 @@ export default function Index() {
                       <div className="metric-box"><span>Leads qualificados</span><strong>{NUM(market.qualified)}</strong></div>
                       <div className="metric-box"><span>Reuniões realizadas</span><strong>{NUM(market.meetingsDone)}</strong></div>
                       <div className="metric-box"><span>Clientes fechados</span><strong>{NUM(market.closed)}</strong></div>
-                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.averageInitial ? BRL(market.averageInitial) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>Ticket mensal médio</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
                       <div className="metric-box"><span>Faturamento imediato</span><strong className={moneyClass}>{market.immediateRevenue ? BRL(market.immediateRevenue) : "Em validação"}</strong></div>
                       <div className="metric-box"><span>MRR novo</span><strong className={moneyClass}>{market.newMrr ? BRL(market.newMrr) : "Em validação"}</strong></div>
                       <div className="metric-box"><span>Duração média</span><strong>{market.averageContractMonths ? `${NUM(market.averageContractMonths)} meses` : "Em validação"}</strong></div>
