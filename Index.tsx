@@ -26,7 +26,7 @@ import { supabase } from "./src/lib/supabase";
 
 const BRL = (n: number) =>
   Number.isFinite(n)
-    ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
+    ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : "—";
 
 const NUM = (n: number) => (Number.isFinite(n) ? n.toLocaleString("pt-BR") : "—");
@@ -389,11 +389,13 @@ function NumberField({
   className?: string;
   placeholder?: string;
 }) {
-  const [text, setText] = useState(value === 0 ? "" : String(value));
+  const moneyText = (amount: number) => amount.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+  const [focused, setFocused] = useState(false);
+  const [text, setText] = useState(value === 0 ? "" : prefix === "R$" ? moneyText(value) : String(value));
 
   useEffect(() => {
-    setText(value === 0 ? "" : String(value));
-  }, [value]);
+    if (!focused) setText(value === 0 ? "" : prefix === "R$" ? moneyText(value) : String(value));
+  }, [value, prefix, focused]);
 
   return (
     <span className={"number-field " + className}>
@@ -402,6 +404,14 @@ function NumberField({
         inputMode="decimal"
         value={text}
         placeholder={placeholder ?? "0"}
+        onFocus={() => {
+          setFocused(true);
+          setText(value === 0 ? "" : String(value));
+        }}
+        onBlur={() => {
+          setFocused(false);
+          setText(value === 0 ? "" : prefix === "R$" ? moneyText(value) : String(value));
+        }}
         onChange={(event) => {
           const raw = event.target.value;
           const n = Number.parseFloat(raw.replace(",", "."));
