@@ -29,6 +29,11 @@ const BRL = (n: number) =>
     ? n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : "—";
 
+const USD = (n: number) =>
+  Number.isFinite(n)
+    ? n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : "—";
+
 const NUM = (n: number) => (Number.isFinite(n) ? n.toLocaleString("pt-BR") : "—");
 const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
 
@@ -78,6 +83,10 @@ type Market = Funnel & {
   averageContractMonths: number;
   immediateRevenue: number;
   newMrr: number;
+  exchangeRate: number;
+  investmentBrl: number;
+  immediateRevenueBrl: number;
+  newMrrBrl: number;
 };
 
 type MonthRow = {
@@ -179,8 +188,8 @@ const DEFAULTS: AppState = {
     safeMeetings: 12,
   },
   funnel: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0 },
-  br: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageInitial: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
-  us: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageInitial: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0 },
+  br: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageInitial: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0, exchangeRate: 0, investmentBrl: 0, immediateRevenueBrl: 0, newMrrBrl: 0 },
+  us: { investment: 0, leads: 0, qualified: 0, meetingsBooked: 0, meetingsDone: 0, proposals: 0, closed: 0, ticket: 0, averageInitial: 0, averageMrr: 0, averageContractMonths: 0, immediateRevenue: 0, newMrr: 0, exchangeRate: 0, investmentBrl: 0, immediateRevenueBrl: 0, newMrrBrl: 0 },
   months: defaultMonths,
   revenueBase: DEFAULT_REVENUE_BASE,
   tasks: [
@@ -201,8 +210,8 @@ const SUGGESTIONS = [
 
 const COMMERCIAL_SHEET_CONFIG = {
   id: "158zITytJmMky2kzdeAGRpLC5HOK31Y_veaQsYrkyOfM",
-  brTotalRange: "D77:S77",
-  usTotalRange: "D116:S116",
+  brTotalRange: "D77:W77",
+  usTotalRange: "D116:W116",
 };
 
 const REVENUE_SHEET_CONFIG = {
@@ -345,6 +354,10 @@ function sheetTotalToMarket(row: unknown[]): Market {
     averageContractMonths: parseSheetNumber(row[10]),
     immediateRevenue,
     newMrr: parseSheetNumber(row[12]),
+    exchangeRate: parseSheetNumber(row[16]),
+    investmentBrl: parseSheetNumber(row[17]),
+    immediateRevenueBrl: parseSheetNumber(row[18]),
+    newMrrBrl: parseSheetNumber(row[19]),
   };
 }
 
@@ -646,7 +659,7 @@ export default function Index() {
   };
 
   const combinedFunnel: Funnel = {
-    investment: state.br.investment + state.us.investment,
+    investment: state.br.investment + state.us.investmentBrl,
     leads: state.br.leads + state.us.leads,
     qualified: state.br.qualified + state.us.qualified,
     meetingsBooked: state.br.meetingsBooked + state.us.meetingsBooked,
@@ -654,7 +667,7 @@ export default function Index() {
     proposals: state.br.proposals + state.us.proposals,
     closed: state.br.closed + state.us.closed,
     ticket: (state.br.closed + state.us.closed) > 0
-      ? ((state.br.ticket * state.br.closed) + (state.us.ticket * state.us.closed)) / (state.br.closed + state.us.closed)
+      ? ((state.br.ticket * state.br.closed) + (state.us.ticket * state.us.exchangeRate * state.us.closed)) / (state.br.closed + state.us.closed)
       : 0,
   };
 
@@ -677,6 +690,7 @@ export default function Index() {
 
   const renderFunnel = (marketKey: "br" | "us", title: string) => {
     const market = state[marketKey];
+    const isUsd = marketKey === "us";
 
     const steps = [
       { key: "investment", label: "Investimento", money: true, conv: null, convLabel: "" },
@@ -702,9 +716,12 @@ export default function Index() {
                 <NumberField
                   value={market[step.key as keyof Market]}
                   onChange={(v) => setNested(marketKey, step.key, v)}
-                  prefix={step.money ? "R$" : undefined}
+                  prefix={step.money ? (isUsd ? "$" : "R$") : undefined}
                 />
               </span>
+              {isUsd && step.money && Number(market[step.key as keyof Market]) > 0 && (
+                <small>Estimativa: <b>{BRL(step.key === "investment" ? market.investmentBrl : Number(market[step.key as keyof Market]) * market.exchangeRate)}</b></small>
+              )}
               {step.conv && <small>{step.convLabel}: <b>{step.conv}</b></small>}
             </div>
           ))}
@@ -955,6 +972,11 @@ export default function Index() {
                 const cpl = market.leads > 0 ? market.investment / market.leads : null;
                 const cac = market.closed > 0 ? market.investment / market.closed : null;
                 const budgetValue = state[budgetKey as "budgetBR" | "budgetUS"];
+                const isUsd = key === "us";
+                const money = isUsd ? USD : BRL;
+                const estimate = (value: number, exact?: number) => isUsd && value > 0
+                  ? <small>Estimativa: <b>{BRL(exact || value * market.exchangeRate)}</b></small>
+                  : null;
 
                 return (
                   <div className="surface market-card" key={key}>
@@ -967,21 +989,21 @@ export default function Index() {
                       <label className="metric-box">
                         <span>Meta de investimento</span>
                         <span className={moneyClass}>
-                          <NumberField value={budgetValue} onChange={(v) => set(budgetKey as "budgetBR" | "budgetUS", v)} prefix="R$" />
+                          <NumberField value={budgetValue} onChange={(v) => set(budgetKey as "budgetBR" | "budgetUS", v)} prefix={isUsd ? "$" : "R$"} />
                         </span>
                       </label>
-                      <div className="metric-box"><span>Investimento</span><strong className={moneyClass}>{BRL(market.investment)}</strong></div>
+                      <div className="metric-box"><span>Investimento</span><strong className={moneyClass}>{money(market.investment)}</strong>{estimate(market.investment, market.investmentBrl)}</div>
                       <div className="metric-box"><span>Leads gerados</span><strong>{NUM(market.leads)}</strong></div>
                       <div className="metric-box"><span>Leads qualificados</span><strong>{NUM(market.qualified)}</strong></div>
                       <div className="metric-box"><span>Reuniões realizadas</span><strong>{NUM(market.meetingsDone)}</strong></div>
                       <div className="metric-box"><span>Clientes fechados</span><strong>{NUM(market.closed)}</strong></div>
-                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.averageInitial ? BRL(market.averageInitial) : "Em validação"}</strong></div>
-                      <div className="metric-box"><span>Ticket mensal médio</span><strong className={moneyClass}>{market.ticket ? BRL(market.ticket) : "Em validação"}</strong></div>
-                      <div className="metric-box"><span>Faturamento imediato</span><strong className={moneyClass}>{market.immediateRevenue ? BRL(market.immediateRevenue) : "Em validação"}</strong></div>
-                      <div className="metric-box"><span>MRR novo</span><strong className={moneyClass}>{market.newMrr ? BRL(market.newMrr) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.averageInitial ? money(market.averageInitial) : "Em validação"}</strong>{estimate(market.averageInitial, market.closed ? market.immediateRevenueBrl / market.closed : 0)}</div>
+                      <div className="metric-box"><span>Ticket mensal médio</span><strong className={moneyClass}>{market.ticket ? money(market.ticket) : "Em validação"}</strong>{estimate(market.ticket)}</div>
+                      <div className="metric-box"><span>Faturamento imediato</span><strong className={moneyClass}>{market.immediateRevenue ? money(market.immediateRevenue) : "Em validação"}</strong>{estimate(market.immediateRevenue, market.immediateRevenueBrl)}</div>
+                      <div className="metric-box"><span>MRR novo</span><strong className={moneyClass}>{market.newMrr ? money(market.newMrr) : "Em validação"}</strong>{estimate(market.newMrr, market.newMrrBrl)}</div>
                       <div className="metric-box"><span>Duração média</span><strong>{market.averageContractMonths ? `${NUM(market.averageContractMonths)} meses` : "Em validação"}</strong></div>
-                      <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? BRL(cpl) : "Em validação"}</strong></div>
-                      <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? BRL(cac) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? money(cpl) : "Em validação"}</strong>{cpl ? estimate(cpl) : null}</div>
+                      <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? money(cac) : "Em validação"}</strong>{cac ? estimate(cac) : null}</div>
                     </div>
                   </div>
                 );
