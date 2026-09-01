@@ -691,6 +691,12 @@ export default function Index() {
   const renderFunnel = (marketKey: "br" | "us", title: string) => {
     const market = state[marketKey];
     const isUsd = marketKey === "us";
+    const isUsdRevenue = (key: string) => isUsd && key !== "investment";
+    const brlEquivalent = (key: string, value: number) => {
+      if (key === "averageInitial") return market.closed ? market.immediateRevenueBrl / market.closed : 0;
+      if (key === "averageMrr" || key === "ticket") return market.closed ? market.newMrrBrl / market.closed : 0;
+      return value * market.exchangeRate;
+    };
 
     const steps = [
       { key: "investment", label: "Investimento", money: true, conv: null, convLabel: "" },
@@ -716,11 +722,11 @@ export default function Index() {
                 <NumberField
                   value={market[step.key as keyof Market]}
                   onChange={(v) => setNested(marketKey, step.key, v)}
-                  prefix={step.money ? (isUsd ? "$" : "R$") : undefined}
+                  prefix={step.money ? (isUsdRevenue(step.key) ? "$" : "R$") : undefined}
                 />
               </span>
-              {isUsd && step.money && Number(market[step.key as keyof Market]) > 0 && (
-                <small>Estimativa: <b>{BRL(step.key === "investment" ? market.investmentBrl : Number(market[step.key as keyof Market]) * market.exchangeRate)}</b></small>
+              {isUsdRevenue(step.key) && brlEquivalent(step.key, Number(market[step.key as keyof Market])) > 0 && (
+                <small className="currency-estimate"><span>Estimativa em reais</span><b>{BRL(brlEquivalent(step.key, Number(market[step.key as keyof Market])))}</b></small>
               )}
               {step.conv && <small>{step.convLabel}: <b>{step.conv}</b></small>}
             </div>
@@ -973,9 +979,9 @@ export default function Index() {
                 const cac = market.closed > 0 ? market.investment / market.closed : null;
                 const budgetValue = state[budgetKey as "budgetBR" | "budgetUS"];
                 const isUsd = key === "us";
-                const money = isUsd ? USD : BRL;
-                const estimate = (value: number, exact?: number) => isUsd && value > 0
-                  ? <small>Estimativa: <b>{BRL(exact || value * market.exchangeRate)}</b></small>
+                const revenueMoney = isUsd ? USD : BRL;
+                const estimate = (value: number, exact?: number) => isUsd && (value > 0 || Number(exact) > 0)
+                  ? <small className="currency-estimate"><span>Estimativa em reais</span><b>{BRL(exact ?? value * market.exchangeRate)}</b></small>
                   : null;
 
                 return (
@@ -989,21 +995,21 @@ export default function Index() {
                       <label className="metric-box">
                         <span>Meta de investimento</span>
                         <span className={moneyClass}>
-                          <NumberField value={budgetValue} onChange={(v) => set(budgetKey as "budgetBR" | "budgetUS", v)} prefix={isUsd ? "$" : "R$"} />
+                          <NumberField value={budgetValue} onChange={(v) => set(budgetKey as "budgetBR" | "budgetUS", v)} prefix="R$" />
                         </span>
                       </label>
-                      <div className="metric-box"><span>Investimento</span><strong className={moneyClass}>{money(market.investment)}</strong>{estimate(market.investment, market.investmentBrl)}</div>
+                      <div className="metric-box"><span>Investimento</span><strong className={moneyClass}>{BRL(market.investment)}</strong></div>
                       <div className="metric-box"><span>Leads gerados</span><strong>{NUM(market.leads)}</strong></div>
                       <div className="metric-box"><span>Leads qualificados</span><strong>{NUM(market.qualified)}</strong></div>
                       <div className="metric-box"><span>Reuniões realizadas</span><strong>{NUM(market.meetingsDone)}</strong></div>
                       <div className="metric-box"><span>Clientes fechados</span><strong>{NUM(market.closed)}</strong></div>
-                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.averageInitial ? money(market.averageInitial) : "Em validação"}</strong>{estimate(market.averageInitial, market.closed ? market.immediateRevenueBrl / market.closed : 0)}</div>
-                      <div className="metric-box"><span>Ticket mensal médio</span><strong className={moneyClass}>{market.ticket ? money(market.ticket) : "Em validação"}</strong>{estimate(market.ticket)}</div>
-                      <div className="metric-box"><span>Faturamento imediato</span><strong className={moneyClass}>{market.immediateRevenue ? money(market.immediateRevenue) : "Em validação"}</strong>{estimate(market.immediateRevenue, market.immediateRevenueBrl)}</div>
-                      <div className="metric-box"><span>MRR novo</span><strong className={moneyClass}>{market.newMrr ? money(market.newMrr) : "Em validação"}</strong>{estimate(market.newMrr, market.newMrrBrl)}</div>
+                      <div className="metric-box"><span>Valor inicial médio</span><strong className={moneyClass}>{market.averageInitial ? revenueMoney(market.averageInitial) : "Em validação"}</strong>{estimate(market.averageInitial, market.closed ? market.immediateRevenueBrl / market.closed : 0)}</div>
+                      <div className="metric-box"><span>Ticket mensal médio</span><strong className={moneyClass}>{market.ticket ? revenueMoney(market.ticket) : "Em validação"}</strong>{estimate(market.ticket, market.closed ? market.newMrrBrl / market.closed : 0)}</div>
+                      <div className="metric-box"><span>Faturamento imediato</span><strong className={moneyClass}>{market.immediateRevenue ? revenueMoney(market.immediateRevenue) : "Em validação"}</strong>{estimate(market.immediateRevenue, market.immediateRevenueBrl)}</div>
+                      <div className="metric-box"><span>MRR novo</span><strong className={moneyClass}>{market.newMrr ? revenueMoney(market.newMrr) : "Em validação"}</strong>{estimate(market.newMrr, market.newMrrBrl)}</div>
                       <div className="metric-box"><span>Duração média</span><strong>{market.averageContractMonths ? `${NUM(market.averageContractMonths)} meses` : "Em validação"}</strong></div>
-                      <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? money(cpl) : "Em validação"}</strong>{cpl ? estimate(cpl) : null}</div>
-                      <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? money(cac) : "Em validação"}</strong>{cac ? estimate(cac) : null}</div>
+                      <div className="metric-box"><span>CPL</span><strong className={moneyClass}>{cpl ? BRL(cpl) : "Em validação"}</strong></div>
+                      <div className="metric-box"><span>CAC</span><strong className={moneyClass}>{cac ? BRL(cac) : "Em validação"}</strong></div>
                     </div>
                   </div>
                 );

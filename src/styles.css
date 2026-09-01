@@ -430,7 +430,25 @@ h1 {
 .market-head h3 span { display: inline-flex; margin-right: 10px; color: var(--primary); }
 .market-head em { font-style: normal; font-size: 0.75rem; color: var(--subtle); background: rgba(255,255,255,0.06); border: 1px solid var(--line); border-radius: 999px; padding: 6px 9px; }
 .market-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.metric-box strong { display: block; margin-top: 8px; }
+.metric-box strong { display: block; margin-top: 8px; line-height: 1.15; }
+.funnel-step .currency-estimate,
+.metric-box .currency-estimate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--subtle);
+  line-height: 1.25;
+}
+.funnel-step .currency-estimate span,
+.metric-box .currency-estimate span { font-size: 12px; }
+.funnel-step .currency-estimate b,
+.metric-box .currency-estimate b { color: var(--text); font-size: 15px; white-space: nowrap; }
+.metric-box { min-width: 0; }
+.metric-box > strong { overflow-wrap: anywhere; }
 
 .table-scroll table { width: 100%; min-width: 1120px; border-collapse: collapse; }
 th { color: var(--subtle); font-size: 0.74rem; text-align: left; font-weight: 800; }
