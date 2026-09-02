@@ -80,7 +80,11 @@ function Login({ onLocalLogin }: { onLocalLogin: () => void }) {
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true);
     const normalizedUser = username.trim().toLowerCase();
-    if (normalizedUser === "bonatto") {
+    const email = normalizedUser === "bonatto"
+      ? "bonatto@speedymediaus.com"
+      : normalizedUser.includes("@") ? normalizedUser : `${normalizedUser}@internal.speedymediaus.com`;
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error && normalizedUser === "bonatto") {
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
       const passwordHash = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
       if (passwordHash === "253ee92d8a8465535aad8e6f864a3506a526b14d649d56917baf1e66f9b91956") {
@@ -90,8 +94,6 @@ function Login({ onLocalLogin }: { onLocalLogin: () => void }) {
         return;
       }
     }
-    const email = normalizedUser.includes("@") ? normalizedUser : `${normalizedUser}@internal.speedymediaus.com`;
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) toast.error("Não foi possível entrar", { description: "Confira o usuário e a senha." });
   };
