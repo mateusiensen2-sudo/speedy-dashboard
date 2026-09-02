@@ -84,7 +84,7 @@ function Login({ onLocalLogin }: { onLocalLogin: () => void }) {
       ? "gbpspeedy@gmail.com"
       : normalizedUser.includes("@") ? normalizedUser : `${normalizedUser}@internal.speedymediaus.com`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error && normalizedUser === "bonatto") {
+    if (error && (normalizedUser === "bonatto" || normalizedUser === "gbpspeedy@gmail.com")) {
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
       const passwordHash = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
       if (passwordHash === "253ee92d8a8465535aad8e6f864a3506a526b14d649d56917baf1e66f9b91956") {
