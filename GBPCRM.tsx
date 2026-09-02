@@ -81,7 +81,7 @@ function Login({ onLocalLogin }: { onLocalLogin: () => void }) {
     event.preventDefault(); setLoading(true);
     const normalizedUser = username.trim().toLowerCase();
     const email = normalizedUser === "bonatto"
-      ? "bonatto@speedymediaus.com"
+      ? "gbpspeedy@gmail.com"
       : normalizedUser.includes("@") ? normalizedUser : `${normalizedUser}@internal.speedymediaus.com`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error && normalizedUser === "bonatto") {
