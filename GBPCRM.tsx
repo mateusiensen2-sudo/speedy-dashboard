@@ -73,17 +73,27 @@ const friendlyDate = (value: string) => {
   return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }).replace(".", "");
 };
 
-function Login() {
+function Login({ onLocalLogin }: { onLocalLogin: () => void }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true);
     const normalizedUser = username.trim().toLowerCase();
+    if (normalizedUser === "bonatto") {
+      const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password));
+      const passwordHash = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+      if (passwordHash === "253ee92d8a8465535aad8e6f864a3506a526b14d649d56917baf1e66f9b91956") {
+        window.localStorage.setItem("speedy_gbp_local_auth", "bonatto");
+        setLoading(false);
+        onLocalLogin();
+        return;
+      }
+    }
     const email = normalizedUser.includes("@") ? normalizedUser : `${normalizedUser}@internal.speedymediaus.com`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) toast.error("Não foi possível entrar", { description: "Confira o e-mail e a senha." });
+    if (error) toast.error("Não foi possível entrar", { description: "Confira o usuário e a senha." });
   };
   return <main className="gbp-auth">
     <form className="gbp-login" onSubmit={submit}>
@@ -129,6 +139,7 @@ function ClientForm({ client, onClose, onSave }: { client?: Client; onClose: () 
 
 export default function GBPCRM() {
   const [session, setSession] = useState<Session | null>(null);
+  const [localAuthenticated, setLocalAuthenticated] = useState(() => window.localStorage.getItem("speedy_gbp_local_auth") === "bonatto");
   const [authReady, setAuthReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [state, setState] = useState<CRMState>(INITIAL);
@@ -145,6 +156,12 @@ export default function GBPCRM() {
   }, []);
 
   useEffect(() => {
+    if (localAuthenticated) {
+      const saved = window.localStorage.getItem("speedy_gbp_crm_state");
+      setState(saved ? JSON.parse(saved) as CRMState : INITIAL);
+      setReady(true);
+      return;
+    }
     if (!session?.user.id) { setReady(false); return; }
     const load = async () => {
       try {
@@ -159,10 +176,19 @@ export default function GBPCRM() {
       }
     };
     void load();
-  }, [session?.user.id]);
+  }, [session?.user.id, localAuthenticated]);
 
   useEffect(() => {
-    if (!ready || !session?.user.id) return;
+    if (!ready) return;
+    if (localAuthenticated) {
+      setSaveState("saving");
+      const localTimer = window.setTimeout(() => {
+        window.localStorage.setItem("speedy_gbp_crm_state", JSON.stringify(state));
+        setSaveState("saved");
+      }, 250);
+      return () => window.clearTimeout(localTimer);
+    }
+    if (!session?.user.id) return;
     setSaveState("saving");
     const timer = window.setTimeout(async () => {
       try {
@@ -184,7 +210,7 @@ export default function GBPCRM() {
       } catch { setSaveState("error"); }
     }, 650);
     return () => window.clearTimeout(timer);
-  }, [state, ready, session?.user.id]);
+  }, [state, ready, session?.user.id, localAuthenticated]);
 
   const filteredClients = useMemo(() => state.clients.filter(client => `${client.name} ${client.category} ${client.city}`.toLowerCase().includes(search.toLowerCase())), [state.clients, search]);
   const openTasks = state.tasks.filter(task => !task.done);
@@ -208,7 +234,7 @@ export default function GBPCRM() {
   };
 
   if (!authReady) return <main className="gbp-auth"><Loader2 className="spin" /></main>;
-  if (!session) return <Login />;
+  if (!session && !localAuthenticated) return <Login onLocalLogin={() => setLocalAuthenticated(true)} />;
   if (!ready) return <main className="gbp-auth"><div className="gbp-loading"><Loader2 className="spin" /><span>Preparando sua operação...</span></div></main>;
 
   return <div className="gbp-app">
@@ -220,7 +246,7 @@ export default function GBPCRM() {
         <button className={view === "tasks" ? "active" : ""} onClick={() => setView("tasks")}><ListChecks size={18} /> Tarefas <em>{openTasks.length}</em></button>
       </nav>
       <div className="gbp-sidebar-note"><Sparkles size={17} /><div><strong>Regra da operação</strong><p>Toda conta precisa ter uma próxima ação clara e um prazo.</p></div></div>
-      <div className="gbp-user"><div className="gbp-avatar">GM</div><div><strong>Gestor GBP</strong><small>{session.user.email}</small></div><button onClick={() => supabase.auth.signOut()} title="Sair"><LogOut size={17} /></button></div>
+      <div className="gbp-user"><div className="gbp-avatar">GB</div><div><strong>Bonatto</strong><small>{localAuthenticated ? "Gestor GBP" : session?.user.email}</small></div><button onClick={() => { if (localAuthenticated) { window.localStorage.removeItem("speedy_gbp_local_auth"); setLocalAuthenticated(false); } else { void supabase.auth.signOut(); } }} title="Sair"><LogOut size={17} /></button></div>
     </aside>
 
     <main className="gbp-main">
