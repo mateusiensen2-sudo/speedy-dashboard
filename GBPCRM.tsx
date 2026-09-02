@@ -85,7 +85,7 @@ function Login() {
   };
   return <main className="gbp-auth">
     <form className="gbp-login" onSubmit={submit}>
-      <div className="gbp-logo"><span><MapPin size={21} /></span><div><b>Speedy</b><small>GBP Operations</small></div></div>
+      <div className="gbp-logo"><span className="gbp-brand-mark">S</span><div><b>Speedy Media</b><small>GBP Operations</small></div></div>
       <div className="gbp-login-copy"><span className="gbp-kicker">Área interna</span><h1>Gestão local,<br />sem improviso.</h1><p>Entre para acompanhar a operação dos perfis, prioridades e resultados.</p></div>
       <label><span>E-mail</span><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required /></label>
       <label><span>Senha</span><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required /></label>
@@ -211,7 +211,7 @@ export default function GBPCRM() {
 
   return <div className="gbp-app">
     <aside className="gbp-sidebar">
-      <div className="gbp-logo"><span><MapPin size={21} /></span><div><b>Speedy</b><small>GBP Operations</small></div></div>
+      <div className="gbp-logo"><span className="gbp-brand-mark">S</span><div><b>Speedy Media</b><small>GBP Operations</small></div></div>
       <nav>
         <button className={view === "overview" ? "active" : ""} onClick={() => setView("overview")}><LayoutDashboard size={18} /> Visão geral</button>
         <button className={view === "clients" ? "active" : ""} onClick={() => setView("clients")}><Building2 size={18} /> Clientes <em>{state.clients.length}</em></button>
