@@ -843,6 +843,7 @@ export default function Index() {
 
           <div className="hero-actions">
             <a className="ghost-btn" href="/insta"><CalendarDays size={14} /> Calendário</a>
+            <a className="ghost-btn" href="/gbp/gestao"><Activity size={14} /> Gestão GBP</a>
             <div className="month-selector">
   <span>Mês</span>
   <select value={state.selectedMonth} onChange={(event) => set("selectedMonth", event.target.value)}>
