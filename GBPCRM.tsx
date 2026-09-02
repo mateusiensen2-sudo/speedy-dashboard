@@ -74,20 +74,22 @@ const friendlyDate = (value: string) => {
 };
 
 function Login() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setLoading(true);
+    const normalizedUser = username.trim().toLowerCase();
+    const email = normalizedUser.includes("@") ? normalizedUser : `${normalizedUser}@internal.speedymediaus.com`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) toast.error("Não foi possível entrar", { description: "Confira o e-mail e a senha." });
   };
   return <main className="gbp-auth">
     <form className="gbp-login" onSubmit={submit}>
-      <div className="gbp-logo"><span className="gbp-brand-mark">S</span><div><b>Speedy Media</b><small>GBP Operations</small></div></div>
+      <div className="gbp-logo gbp-logo-official"><span><img src="/speedy-logo-icon.png" alt="Speedy Media" /></span><small>GBP Operations</small></div>
       <div className="gbp-login-copy"><span className="gbp-kicker">Área interna</span><h1>Gestão local,<br />sem improviso.</h1><p>Entre para acompanhar a operação dos perfis, prioridades e resultados.</p></div>
-      <label><span>E-mail</span><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required /></label>
+      <label><span>Usuário</span><input value={username} onChange={e => setUsername(e.target.value)} placeholder="seu usuário" autoComplete="username" required /></label>
       <label><span>Senha</span><input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required /></label>
       <button className="gbp-primary" disabled={loading}>{loading ? <Loader2 className="spin" size={18} /> : "Entrar no CRM"}</button>
     </form>
@@ -211,7 +213,7 @@ export default function GBPCRM() {
 
   return <div className="gbp-app">
     <aside className="gbp-sidebar">
-      <div className="gbp-logo"><span className="gbp-brand-mark">S</span><div><b>Speedy Media</b><small>GBP Operations</small></div></div>
+      <div className="gbp-logo gbp-logo-official"><span><img src="/speedy-logo-icon.png" alt="Speedy Media" /></span><small>GBP Operations</small></div>
       <nav>
         <button className={view === "overview" ? "active" : ""} onClick={() => setView("overview")}><LayoutDashboard size={18} /> Visão geral</button>
         <button className={view === "clients" ? "active" : ""} onClick={() => setView("clients")}><Building2 size={18} /> Clientes <em>{state.clients.length}</em></button>
